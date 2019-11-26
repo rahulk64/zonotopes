@@ -4,6 +4,7 @@ import numpy as np
 # from scipy.sparse.linalg import LinearOperator, lsmr
 # from scipy.optimize import OptimizeResult
 from scipy.optimize import lsq_linear
+from scipy.sparse import csr_matrix, dia_matrix
 
 
 """ MY CODE:
@@ -45,15 +46,17 @@ def getNu(time, flag=0):
         raise Exception
 
 def getSt(A, b):
-    ones = np.asarray(np.ones(A.shape[1], ))
+    #ones = np.asarray(np.ones(A.shape[1], ))
+    ones = np.squeeze(np.asarray(np.ones(A.shape[1],)))
     neg_ones = -1 * ones
-    s_t = lsq_linear(A, b, bounds=(neg_ones, ones), lsq_solver='lsmr', lsmr_tol=1e-13, verbose=0).x
+    A_coo = csr_matrix(A)
+    s_t = lsq_linear(A_coo, b, bounds=(neg_ones, ones), lsq_solver='lsmr', lsmr_tol=1e-13, verbose=0).x
     print("size", s_t.shape)
     return s_t
 
 A = np.matrix("-4 0 2 3 ; -2 1 0 -1")
-b = np.matrix("20 ; 10")
-k = np.matrix("30 ; 10")
+b = np.matrix("20 10")
+k = np.matrix("30 10")
 
 # A = np.matrix("1 0 ; 0 1")
 # b = np.matrix("0 ; 0")
