@@ -33,13 +33,16 @@ eps: point in R^m representing the projection
 def projZonotope(A_arg, b, n, m):
     #un-ravel
     #A = tf.reshape(A_arg, (n,m))
-    A = A_arg
+    #A = A_arg
     ones = np.squeeze(np.asarray(np.ones(A.shape[1], )))
     neg_ones = -1 * ones
-    A_coo = csr_matrix(A)
-    #x_lsq = np.linalg.lstsq(A, b, rcond=-1)[0]
+    #A_coo = csr_matrix(A)
+    x_lsq = np.linalg.lstsq(A, b, rcond=-1)[0]
     #eps = bvls(A, b, x_lsq, neg_ones, ones, 1e-13, 200, 2)
-    eps = lsq_linear(A_coo, b, bounds=(neg_ones, ones), lsq_solver='lsmr', lsmr_tol=1e-13, verbose=0).x
+
+    #NOTE THIS WORKS
+    #eps = lsq_linear(A_coo, b, bounds=(neg_ones, ones), lsq_solver='lsmr', lsmr_tol=1e-13, verbose=0).x
+    eps = lsq_linear(A, b, bounds=(neg_ones, ones), lsq_solver='exact', lsmr_tol=1e-13, verbose=0).x
     #eps = tf.py_function(calcLSQ, [A, b], (tf.float64,tf.float64))
     return eps
 """
