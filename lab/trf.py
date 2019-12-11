@@ -1,6 +1,6 @@
 import numpy as np
 #import tensorflow as tf
-from scipy.sparse.linalg import LinearOperator
+from linop import LinearOperator
 
 from numpy.linalg import norm
 

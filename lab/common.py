@@ -6,7 +6,7 @@ from math import copysign
 import numpy as np
 from numpy.linalg import norm
 
-from scipy.sparse.linalg import LinearOperator, aslinearoperator
+from linop import LinearOperator, aslinearoperator
 
 EPS = np.finfo(float).eps
 

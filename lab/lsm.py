@@ -22,7 +22,7 @@ from numpy.linalg import norm
 from math import sqrt
 #from scipy.sparse.linalg.interface import aslinearoperator
 
-from scipy.sparse.linalg import aslinearoperator
+from linop import aslinearoperator
 
 def _sym_ortho(a, b):
     """
