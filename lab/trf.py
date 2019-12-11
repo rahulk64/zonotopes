@@ -2,7 +2,6 @@ import numpy as np
 #import tensorflow as tf
 from scipy.linalg import qr, solve_triangular
 from scipy.sparse.linalg import LinearOperator
-from scipy.sparse import csr_matrix, dia_matrix
 
 from numpy.linalg import norm
 

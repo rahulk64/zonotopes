@@ -10,7 +10,6 @@ from scipy.sparse.linalg import LinearOperator, aslinearoperator
 
 EPS = np.finfo(float).eps
 
-
 # Functions related to a trust-region problem.
 
 
