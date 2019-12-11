@@ -6,10 +6,7 @@ from math import copysign
 import numpy as np
 from numpy.linalg import norm
 
-from scipy.linalg import cho_factor, cho_solve, LinAlgError
-from scipy.sparse import issparse
 from scipy.sparse.linalg import LinearOperator, aslinearoperator
-
 
 EPS = np.finfo(float).eps
 
