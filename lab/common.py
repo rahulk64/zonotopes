@@ -207,47 +207,13 @@ def print_iteration_linear(iteration, cost, cost_reduction, step_norm,
 
 
 def compute_grad(J, f):
-    """Compute gradient of the least-squares cost function."""
     if isinstance(J, LinearOperator):
         return J.rmatvec(f)
     else:
         return J.T.dot(f)
 
 
-def compute_jac_scale(J, scale_inv_old=None):
-    """Compute variables scale based on the Jacobian matrix."""
-    if issparse(J):
-        scale_inv = np.asarray(J.power(2).sum(axis=0)).ravel()**0.5
-    else:
-        scale_inv = np.sum(J**2, axis=0)**0.5
-
-    if scale_inv_old is None:
-        scale_inv[scale_inv == 0] = 1
-    else:
-        scale_inv = np.maximum(scale_inv, scale_inv_old)
-
-    return 1 / scale_inv, scale_inv
-
-
-def left_multiplied_operator(J, d):
-    """Return diag(d) J as LinearOperator."""
-    J = aslinearoperator(J)
-
-    def matvec(x):
-        return d * J.matvec(x)
-
-    def matmat(X):
-        return d[:, np.newaxis] * J.matmat(X)
-
-    def rmatvec(x):
-        return J.rmatvec(x.ravel() * d)
-
-    return LinearOperator(J.shape, matvec=matvec, matmat=matmat,
-                          rmatvec=rmatvec)
-
-
 def right_multiplied_operator(J, d):
-    """Return J diag(d) as LinearOperator."""
     J = aslinearoperator(J)
 
     def matvec(x):
@@ -264,13 +230,6 @@ def right_multiplied_operator(J, d):
 
 
 def regularized_lsq_operator(J, diag):
-    """Return a matrix arising in regularized least squares as LinearOperator.
-
-    The matrix is
-        [ J ]
-        [ D ]
-    where D is diagonal matrix with elements from `diag`.
-    """
     J = aslinearoperator(J)
     m, n = J.shape
 
@@ -283,42 +242,6 @@ def regularized_lsq_operator(J, diag):
         return J.rmatvec(x1) + diag * x2
 
     return LinearOperator((m + n, n), matvec=matvec, rmatvec=rmatvec)
-
-
-def right_multiply(J, d, copy=True):
-    """Compute J diag(d).
-
-    If `copy` is False, `J` is modified in place (unless being LinearOperator).
-    """
-    if copy and not isinstance(J, LinearOperator):
-        J = J.copy()
-
-    if issparse(J):
-        J.data *= d.take(J.indices, mode='clip')  # scikit-learn recipe.
-    elif isinstance(J, LinearOperator):
-        J = right_multiplied_operator(J, d)
-    else:
-        J *= d
-
-    return J
-
-
-def left_multiply(J, d, copy=True):
-    """Compute diag(d) J.
-
-    If `copy` is False, `J` is modified in place (unless being LinearOperator).
-    """
-    if copy and not isinstance(J, LinearOperator):
-        J = J.copy()
-
-    if issparse(J):
-        J.data *= np.repeat(d, np.diff(J.indptr))  # scikit-learn recipe.
-    elif isinstance(J, LinearOperator):
-        J = left_multiplied_operator(J, d)
-    else:
-        J *= d[:, np.newaxis]
-
-    return J
 
 
 def check_termination(dF, F, dx_norm, x_norm, ratio, ftol, xtol):
