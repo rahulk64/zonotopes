@@ -301,14 +301,6 @@ def isshape(x, nonneg=False):
                 return True
         return False
 
-def _get_dtype(operators, dtypes=None):
-    if dtypes is None:
-        dtypes = []
-    for obj in operators:
-        if obj is not None and hasattr(obj, 'dtype'):
-            dtypes.append(obj.dtype)
-    return np.find_common_type(dtypes, [])
-
 def aslinearoperator(A):
     if isinstance(A, LinearOperator):
         return A
@@ -318,9 +310,6 @@ def aslinearoperator(A):
             raise ValueError('array must have ndim <= 2')
         A = np.atleast_2d(np.asarray(A))
         return MatrixLinearOperator(A)
-
-    #elif isspmatrix(A) or is_pydata_spmatrix(A):
-        #return MatrixLinearOperator(A)
 
     else:
         if hasattr(A, 'shape') and hasattr(A, 'matvec'):
