@@ -1,76 +1,6 @@
 import numpy as np
 
 class LinearOperator(object):
-    """Common interface for performing matrix vector products
-    Many iterative methods (e.g. cg, gmres) do not need to know the
-    individual entries of a matrix to solve a linear system A*x=b.
-    Such solvers only require the computation of matrix vector
-    products, A*v where v is a dense vector.  This class serves as
-    an abstract interface between iterative solvers and matrix-like
-    objects.
-    To construct a concrete LinearOperator, either pass appropriate
-    callables to the constructor of this class, or subclass it.
-    A subclass must implement either one of the methods ``_matvec``
-    and ``_matmat``, and the attributes/properties ``shape`` (pair of
-    integers) and ``dtype`` (may be None). It may call the ``__init__``
-    on this class to have these attributes validated. Implementing
-    ``_matvec`` automatically implements ``_matmat`` (using a naive
-    algorithm) and vice-versa.
-    Optionally, a subclass may implement ``_rmatvec`` or ``_adjoint``
-    to implement the Hermitian adjoint (conjugate transpose). As with
-    ``_matvec`` and ``_matmat``, implementing either ``_rmatvec`` or
-    ``_adjoint`` implements the other automatically. Implementing
-    ``_adjoint`` is preferable; ``_rmatvec`` is mostly there for
-    backwards compatibility.
-    Parameters
-    ----------
-    shape : tuple
-        Matrix dimensions (M, N).
-    matvec : callable f(v)
-        Returns returns A * v.
-    rmatvec : callable f(v)
-        Returns A^H * v, where A^H is the conjugate transpose of A.
-    matmat : callable f(V)
-        Returns A * V, where V is a dense matrix with dimensions (N, K).
-    dtype : dtype
-        Data type of the matrix.
-    rmatmat : callable f(V)
-        Returns A^H * V, where V is a dense matrix with dimensions (M, K).
-    Attributes
-    ----------
-    args : tuple
-        For linear operators describing products etc. of other linear
-        operators, the operands of the binary operation.
-    See Also
-    --------
-    aslinearoperator : Construct LinearOperators
-    Notes
-    -----
-    The user-defined matvec() function must properly handle the case
-    where v has shape (N,) as well as the (N,1) case.  The shape of
-    the return type is handled internally by LinearOperator.
-    LinearOperator instances can also be multiplied, added with each
-    other and exponentiated, all lazily: the result of these operations
-    is always a new, composite LinearOperator, that defers linear
-    operations to the original operators and combines the results.
-    More details regarding how to subclass a LinearOperator and several
-    examples of concrete LinearOperator instances can be found in the
-    external project `PyLops <https://pylops.readthedocs.io>`_.
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from scipy.sparse.linalg import LinearOperator
-    >>> def mv(v):
-    ...     return np.array([2*v[0], 3*v[1]])
-    ...
-    >>> A = LinearOperator((2,2), matvec=mv)
-    >>> A
-    <2x2 _CustomLinearOperator with dtype=float64>
-    >>> A.matvec(np.ones(2))
-    array([ 2.,  3.])
-    >>> A * np.ones(2)
-    array([ 2.,  3.])
-    """
     def __new__(cls, *args, **kwargs):
         if cls is LinearOperator:
             # Operate as _CustomLinearOperator factory.
@@ -87,10 +17,6 @@ class LinearOperator(object):
             return obj
 
     def __init__(self, dtype, shape):
-        """Initialize this LinearOperator.
-        To be called by subclasses. ``dtype`` may be None; ``shape`` should
-        be convertible to a length-2 tuple.
-        """
         if dtype is not None:
             dtype = np.dtype(dtype)
 
@@ -102,49 +28,17 @@ class LinearOperator(object):
         self.shape = shape
 
     def _init_dtype(self):
-        """Called from subclasses at the end of the __init__ routine.
-        """
         if self.dtype is None:
             v = np.zeros(self.shape[-1])
             self.dtype = np.asarray(self.matvec(v)).dtype
 
     def _matmat(self, X):
-        """Default matrix-matrix multiplication handler.
-        Falls back on the user-defined _matvec method, so defining that will
-        define matrix multiplication (though in a very suboptimal way).
-        """
-
         return np.hstack([self.matvec(col.reshape(-1,1)) for col in X.T])
 
     def _matvec(self, x):
-        """Default matrix-vector multiplication handler.
-        If self is a linear operator of shape (M, N), then this method will
-        be called on a shape (N,) or (N, 1) ndarray, and should return a
-        shape (M,) or (M, 1) ndarray.
-        This default implementation falls back on _matmat, so defining that
-        will define matrix-vector multiplication as well.
-        """
         return self.matmat(x.reshape(-1, 1))
 
     def matvec(self, x):
-        """Matrix-vector multiplication.
-        Performs the operation y=A*x where A is an MxN linear
-        operator and x is a column vector or 1-d array.
-        Parameters
-        ----------
-        x : {matrix, ndarray}
-            An array with shape (N,) or (N,1).
-        Returns
-        -------
-        y : {matrix, ndarray}
-            A matrix or ndarray with shape (M,) or (M,1) depending
-            on the type and shape of the x argument.
-        Notes
-        -----
-        This matvec wraps the user-specified matvec routine or overridden
-        _matvec method to ensure that y has the correct shape and type.
-        """
-
         x = np.asanyarray(x)
 
         M,N = self.shape
@@ -169,24 +63,6 @@ class LinearOperator(object):
         return y
 
     def rmatvec(self, x):
-        """Adjoint matrix-vector multiplication.
-        Performs the operation y = A^H * x where A is an MxN linear
-        operator and x is a column vector or 1-d array.
-        Parameters
-        ----------
-        x : {matrix, ndarray}
-            An array with shape (M,) or (M,1).
-        Returns
-        -------
-        y : {matrix, ndarray}
-            A matrix or ndarray with shape (N,) or (N,1) depending
-            on the type and shape of the x argument.
-        Notes
-        -----
-        This rmatvec wraps the user-specified rmatvec routine or overridden
-        _rmatvec method to ensure that y has the correct shape and type.
-        """
-
         x = np.asanyarray(x)
 
         M,N = self.shape
@@ -211,7 +87,6 @@ class LinearOperator(object):
         return y
 
     def _rmatvec(self, x):
-        """Default implementation of _rmatvec; defers to adjoint."""
         if type(self)._adjoint == LinearOperator._adjoint:
             # _adjoint not overridden, prevent infinite recursion
             raise NotImplementedError
@@ -219,24 +94,6 @@ class LinearOperator(object):
             return self.H.matvec(x)
 
     def matmat(self, X):
-        """Matrix-matrix multiplication.
-        Performs the operation y=A*X where A is an MxN linear
-        operator and X dense N*K matrix or ndarray.
-        Parameters
-        ----------
-        X : {matrix, ndarray}
-            An array with shape (N,K).
-        Returns
-        -------
-        Y : {matrix, ndarray}
-            A matrix or ndarray with shape (M,K) depending on
-            the type of the X argument.
-        Notes
-        -----
-        This matmat wraps any user-specified matmat routine or overridden
-        _matmat method to ensure that y has the correct type.
-        """
-
         X = np.asanyarray(X)
 
         if X.ndim != 2:
@@ -255,23 +112,6 @@ class LinearOperator(object):
         return Y
 
     def rmatmat(self, X):
-        """Adjoint matrix-matrix multiplication.
-        Performs the operation y = A^H * x where A is an MxN linear
-        operator and x is a column vector or 1-d array, or 2-d array.
-        The default implementation defers to the adjoint.
-        Parameters
-        ----------
-        X : {matrix, ndarray}
-            A matrix or 2D array.
-        Returns
-        -------
-        Y : {matrix, ndarray}
-            A matrix or 2D array depending on the type of the input.
-        Notes
-        -----
-        This rmatmat wraps the user-specified rmatmat routine.
-        """
-
         X = np.asanyarray(X)
 
         if X.ndim != 2:
@@ -288,7 +128,6 @@ class LinearOperator(object):
         return Y
 
     def _rmatmat(self, X):
-        """Default implementation of _rmatmat defers to rmatvec or adjoint."""
         if type(self)._adjoint == LinearOperator._adjoint:
             return np.hstack([self.rmatvec(col.reshape(-1, 1)) for col in X.T])
         else:
@@ -301,17 +140,6 @@ class LinearOperator(object):
         return self.dot(x)
 
     def dot(self, x):
-        """Matrix-matrix or matrix-vector multiplication.
-        Parameters
-        ----------
-        x : array_like
-            1-d or 2-d array, representing a vector or matrix.
-        Returns
-        -------
-        Ax : array
-            1-d or 2-d array (depending on the shape of x) that represents
-            the result of applying this linear operator on x.
-        """
         if isinstance(x, LinearOperator):
             return _ProductLinearOperator(self, x)
         elif np.isscalar(x):
@@ -373,41 +201,23 @@ class LinearOperator(object):
         return '<%dx%d %s with %s>' % (M, N, self.__class__.__name__, dt)
 
     def adjoint(self):
-        """Hermitian adjoint.
-        Returns the Hermitian adjoint of self, aka the Hermitian
-        conjugate or Hermitian transpose. For a complex matrix, the
-        Hermitian adjoint is equal to the conjugate transpose.
-        Can be abbreviated self.H instead of self.adjoint().
-        Returns
-        -------
-        A_H : LinearOperator
-            Hermitian adjoint of self.
-        """
         return self._adjoint()
 
     H = property(adjoint)
 
     def transpose(self):
-        """Transpose this linear operator.
-        Returns a LinearOperator that represents the transpose of this one.
-        Can be abbreviated self.T instead of self.transpose().
-        """
         return self._transpose()
 
     T = property(transpose)
 
     def _adjoint(self):
-        """Default implementation of _adjoint; defers to rmatvec."""
         return _AdjointLinearOperator(self)
 
     def _transpose(self):
-        """ Default implementation of _transpose; defers to rmatvec + conj"""
         return _TransposedLinearOperator(self)
 
 
 class _CustomLinearOperator(LinearOperator):
-    """Linear operator defined in terms of user-specified operations."""
-
     def __init__(self, shape, matvec, rmatvec=None, matmat=None,
                  dtype=None, rmatmat=None):
         super(_CustomLinearOperator, self).__init__(dtype, shape)
