@@ -289,47 +289,6 @@ class _AdjointMatrixOperator(MatrixLinearOperator):
     def _adjoint(self):
         return self.__adjoint
 
-
-class _AdjointLinearOperator(LinearOperator):
-    def __init__(self, A):
-        shape = (A.shape[1], A.shape[0])
-        super(_AdjointLinearOperator, self).__init__(dtype=A.dtype, shape=shape)
-        self.A = A
-        self.args = (A,)
-
-    def _matvec(self, x):
-        return self.A._rmatvec(x)
-
-    def _rmatvec(self, x):
-        return self.A._matvec(x)
-
-    def _matmat(self, x):
-        return self.A._rmatmat(x)
-
-    def _rmatmat(self, x):
-        return self.A._matmat(x)
-
-class _TransposedLinearOperator(LinearOperator):
-    def __init__(self, A):
-        shape = (A.shape[1], A.shape[0])
-        super(_TransposedLinearOperator, self).__init__(dtype=A.dtype, shape=shape)
-        self.A = A
-        self.args = (A,)
-
-    def _matvec(self, x):
-        # NB. np.conj works also on sparse matrices
-        return np.conj(self.A._rmatvec(np.conj(x)))
-
-    def _rmatvec(self, x):
-        return np.conj(self.A._matvec(np.conj(x)))
-
-    def _matmat(self, x):
-        # NB. np.conj works also on sparse matrices
-        return np.conj(self.A._rmatmat(np.conj(x)))
-
-    def _rmatmat(self, x):
-        return np.conj(self.A._matmat(np.conj(x)))
-
 def isshape(x, nonneg=False):
     try:
         # Assume it's a tuple of matrix dimensions (M, N)
