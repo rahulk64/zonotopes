@@ -35,17 +35,6 @@ def build_quadratic_1d(J, g, s, diag=None, s0=None):
 
 
 def minimize_quadratic_1d(a, b, lb, ub, c=0):
-    """Minimize a 1-D quadratic function subject to bounds.
-
-    The free term `c` is 0 by default. Bounds must be finite.
-
-    Returns
-    -------
-    t : float
-        Minimum point.
-    y : float
-        Minimum value.
-    """
     t = [lb, ub]
     if a != 0:
         extremum = -0.5 * b / a
@@ -58,28 +47,6 @@ def minimize_quadratic_1d(a, b, lb, ub, c=0):
 
 
 def evaluate_quadratic(J, g, s, diag=None):
-    """Compute values of a quadratic function arising in least squares.
-
-    The function is 0.5 * s.T * (J.T * J + diag) * s + g.T * s.
-
-    Parameters
-    ----------
-    J : ndarray, sparse matrix or LinearOperator, shape (m, n)
-        Jacobian matrix, affects the quadratic term.
-    g : ndarray, shape (n,)
-        Gradient, defines the linear term.
-    s : ndarray, shape (k, n) or (n,)
-        Array containing steps as rows.
-    diag : ndarray, shape (n,), optional
-        Addition diagonal part, affects the quadratic term.
-        If None, assumed to be 0.
-
-    Returns
-    -------
-    values : ndarray with shape (k,) or float
-        Values of the function. If `s` was 2-D, then ndarray is
-        returned, otherwise, float is returned.
-    """
     if s.ndim == 1:
         Js = J.dot(s)
         q = np.vdot(Js, Js)
@@ -100,28 +67,10 @@ def evaluate_quadratic(J, g, s, diag=None):
 
 
 def in_bounds(x, lb, ub):
-    """Check if a point lies within bounds."""
     return np.all((x >= lb) & (x <= ub))
 
 
 def step_size_to_bound(x, s, lb, ub):
-    """Compute a min_step size required to reach a bound.
-
-    The function computes a positive scalar t, such that x + s * t is on
-    the bound.
-
-    Returns
-    -------
-    step : float
-        Computed step. Non-negative value.
-    hits : ndarray of int with shape of x
-        Each element indicates whether a corresponding variable reaches the
-        bound:
-
-             *  0 - the bound was not hit.
-             * -1 - the lower bound was hit.
-             *  1 - the upper bound was hit.
-    """
     non_zero = np.nonzero(s)
     s_non_zero = s[non_zero]
     steps = np.empty_like(x)
@@ -134,20 +83,6 @@ def step_size_to_bound(x, s, lb, ub):
 
 
 def find_active_constraints(x, lb, ub, rtol=1e-10):
-    """Determine which constraints are active in a given point.
-
-    The threshold is computed using `rtol` and the absolute value of the
-    closest bound.
-
-    Returns
-    -------
-    active : ndarray of int with shape of x
-        Each component shows whether the corresponding constraint is active:
-
-             *  0 - a constraint is not active.
-             * -1 - a lower bound is active.
-             *  1 - a upper bound is active.
-    """
     active = np.zeros_like(x, dtype=int)
 
     if rtol == 0:
@@ -173,11 +108,6 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
 
 
 def make_strictly_feasible(x, lb, ub, rstep=1e-10):
-    """Shift a point to the interior of a feasible region.
-
-    Each element of the returned vector is at least at a relative distance
-    `rstep` from the closest bound. If ``rstep=0`` then `np.nextafter` is used.
-    """
     x_new = x.copy()
 
     active = find_active_constraints(x, lb, ub, rstep)
@@ -200,35 +130,6 @@ def make_strictly_feasible(x, lb, ub, rstep=1e-10):
 
 
 def CL_scaling_vector(x, g, lb, ub):
-    """Compute Coleman-Li scaling vector and its derivatives.
-
-    Components of a vector v are defined as follows:
-    ::
-               | ub[i] - x[i], if g[i] < 0 and ub[i] < np.inf
-        v[i] = | x[i] - lb[i], if g[i] > 0 and lb[i] > -np.inf
-               | 1,           otherwise
-
-    According to this definition v[i] >= 0 for all i. It differs from the
-    definition in paper [1]_ (eq. (2.2)), where the absolute value of v is
-    used. Both definitions are equivalent down the line.
-    Derivatives of v with respect to x take value 1, -1 or 0 depending on a
-    case.
-
-    Returns
-    -------
-    v : ndarray with shape of x
-        Scaling vector.
-    dv : ndarray with shape of x
-        Derivatives of v[i] with respect to x[i], diagonal elements of v's
-        Jacobian.
-
-    References
-    ----------
-    .. [1] M.A. Branch, T.F. Coleman, and Y. Li, "A Subspace, Interior,
-           and Conjugate Gradient Method for Large-Scale Bound-Constrained
-           Minimization Problems," SIAM Journal on Scientific Computing,
-           Vol. 21, Number 1, pp 1-23, 1999.
-    """
     v = np.ones_like(x)
     dv = np.zeros_like(x)
 
@@ -249,7 +150,6 @@ def CL_scaling_vector(x, g, lb, ub):
 
 
 def reflective_transformation(y, lb, ub):
-    """Compute reflective transformation and its gradient."""
     if in_bounds(y, lb, ub):
         return y, np.ones_like(y)
 
@@ -280,30 +180,6 @@ def reflective_transformation(y, lb, ub):
 
 
 # Functions to display algorithm's progress.
-
-
-def print_header_nonlinear():
-    print("{0:^15}{1:^15}{2:^15}{3:^15}{4:^15}{5:^15}"
-          .format("Iteration", "Total nfev", "Cost", "Cost reduction",
-                  "Step norm", "Optimality"))
-
-
-def print_iteration_nonlinear(iteration, nfev, cost, cost_reduction,
-                              step_norm, optimality):
-    if cost_reduction is None:
-        cost_reduction = " " * 15
-    else:
-        cost_reduction = "{0:^15.2e}".format(cost_reduction)
-
-    if step_norm is None:
-        step_norm = " " * 15
-    else:
-        step_norm = "{0:^15.2e}".format(step_norm)
-
-    print("{0:^15}{1:^15}{2:^15.4e}{3}{4}{5:^15.2e}"
-          .format(iteration, nfev, cost, cost_reduction,
-                  step_norm, optimality))
-
 
 def print_header_linear():
     print("{0:^15}{1:^15}{2:^15}{3:^15}{4:^15}"
