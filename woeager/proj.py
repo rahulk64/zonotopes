@@ -33,7 +33,7 @@ eps: point in R^m representing the projection
 """
 
 #@tf.function
-def projZonotope(A, b, n, m):
+def projZonotope(A, b):
     ones = np.squeeze(np.asarray(np.ones(A.shape[1], )))
     neg_ones = -1 * ones
 
