@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.sparse import csr_matrix 
 
-from trf_linear import lsmr, trf_linear
+from trf_linear import trf_linear
+from lsmr import lsmr
 
 # NOTE AND REMINDER TO INCLUDE COPYRIGHT NOTICES
 
@@ -37,7 +38,7 @@ def projZonotope(A, b, n, m):
     neg_ones = -1 * ones
 
     x_lsq = lsmr(A, b, atol=1e-10, btol=1e-10)[0]
-    eps = trf_linear(A, b, x_lsq, neg_ones, ones, 1e-13, 'lsmr', None, 200, 2)
+    eps = trf_linear(A, b, x_lsq, neg_ones, ones, 1e-13, 'lsmr', None, 200, 0)
 
     return eps
 
