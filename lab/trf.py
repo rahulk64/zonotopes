@@ -1,5 +1,6 @@
 import numpy as np
-#import tensorflow as tf
+#import keras as K
+import tensorflow as tf
 from linop import LinearOperator
 
 from numpy.linalg import norm
@@ -39,15 +40,21 @@ Returns
 eps: point in R^m representing the projection
 """
 
-#@tf.function
-def projZonotope(A_arg, b, n, m):
+@tf.function
+def projZonotope(A, b, n, m):
     #un-ravel
     #A = tf.reshape(A_arg, (n,m))
     #A = A_arg
     ones = np.squeeze(np.asarray(np.ones(A.shape[1], )))
     neg_ones = -1 * ones
     #A_coo = csr_matrix(A)
-    x_lsq = np.linalg.lstsq(A, b, rcond=-1)[0]
+
+    A = tf.cast(A, tf.float64)
+    b = tf.cast(b, tf.float64)
+    b = tf.reshape(b, (tf.size(b), 1))
+
+    x_lsq = tf.linalg.lstsq(A, b)
+    print(x_lsq.shape)
     #eps = bvls(A, b, x_lsq, neg_ones, ones, 1e-13, 200, 2)
     eps = trf_linear(A, b, x_lsq, neg_ones, ones, 1e-13, 'lsmr', 1e-13, 200, 0)
 
@@ -57,6 +64,7 @@ def projZonotope(A_arg, b, n, m):
     #eps = tf.py_function(calcLSQ, [A, b], (tf.float64,tf.float64))
     return eps
 
+@tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                verbose):
     m, n = A.shape

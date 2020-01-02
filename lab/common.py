@@ -1,10 +1,12 @@
 """Functions used by least-squares algorithms."""
 from __future__ import division, print_function, absolute_import
+from tensorflow.python.ops import bitwise_ops
 
 from math import copysign
 
 import numpy as np
 from numpy.linalg import norm
+import tensorflow as tf
 
 from linop import LinearOperator, aslinearoperator
 
@@ -65,9 +67,9 @@ def evaluate_quadratic(J, g, s, diag=None):
 
 # Utility functions to work with bound constraints.
 
-
+@tf.function
 def in_bounds(x, lb, ub):
-    return np.all((x >= lb) & (x <= ub))
+    return tf.reduce_all((x >= lb) & (x <= ub))
 
 
 def step_size_to_bound(x, s, lb, ub):
@@ -83,7 +85,10 @@ def step_size_to_bound(x, s, lb, ub):
 
 
 def find_active_constraints(x, lb, ub, rtol=1e-10):
-    active = np.zeros_like(x, dtype=int)
+    active = tf.zeros_like(x, dtype=tf.int32)
+    lb = tf.reshape(lb, x.shape)
+    ub = tf.reshape(ub, x.shape)
+    
 
     if rtol == 0:
         active[x <= lb] = -1
@@ -93,35 +98,43 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     lower_dist = x - lb
     upper_dist = ub - x
 
-    lower_threshold = rtol * np.maximum(1, np.abs(lb))
-    upper_threshold = rtol * np.maximum(1, np.abs(ub))
+    one = tf.Variable(1.0, dtype=tf.float64)
 
-    lower_active = (np.isfinite(lb) &
-                    (lower_dist <= np.minimum(upper_dist, lower_threshold)))
-    active[lower_active] = -1
+    lower_threshold = rtol * tf.maximum(one, tf.abs(lb))
+    upper_threshold = rtol * tf.maximum(one, tf.abs(ub))
 
-    upper_active = (np.isfinite(ub) &
-                    (upper_dist <= np.minimum(lower_dist, upper_threshold)))
-    active[upper_active] = 1
+    lower_active = (tf.math.is_finite(lb) &
+                    (lower_dist <= tf.minimum(upper_dist, lower_threshold)))
+    #active[lower_active] = -1
+    indices = tf.dtypes.cast(lower_active, tf.int32)
+    updates = tf.dtypes.cast(-1*tf.ones(active.shape), tf.int32)
+    active = tf.tensor_scatter_nd_update(active, indices, updates)
+
+    upper_active = (tf.math.is_finite(ub) &
+                    (upper_dist <= tf.minimum(lower_dist, upper_threshold)))
+    #active[upper_active] = 1
+    indices2 = tf.dtypes.cast(upper_active, tf.int32)
+    updates2 = tf.dtypes.cast(tf.ones(active.shape), tf.int32)
+    active = tf.tensor_scatter_nd_update(active, indices2, updates2)
 
     return active
 
 
 def make_strictly_feasible(x, lb, ub, rstep=1e-10):
-    x_new = x.copy()
+    x_new = tf.identity(x) #x.copy()
 
     active = find_active_constraints(x, lb, ub, rstep)
-    lower_mask = np.equal(active, -1)
-    upper_mask = np.equal(active, 1)
+    lower_mask = tf.equal(active, -1)
+    upper_mask = tf.equal(active, 1)
 
     if rstep == 0:
-        x_new[lower_mask] = np.nextafter(lb[lower_mask], ub[lower_mask])
-        x_new[upper_mask] = np.nextafter(ub[upper_mask], lb[upper_mask])
+        x_new[lower_mask] = tf.nextafter(lb[lower_mask], ub[lower_mask])
+        x_new[upper_mask] = tf.nextafter(ub[upper_mask], lb[upper_mask])
     else:
         x_new[lower_mask] = (lb[lower_mask] +
-                             rstep * np.maximum(1, np.abs(lb[lower_mask])))
+                             rstep * tf.maximum(1, tf.abs(lb[lower_mask])))
         x_new[upper_mask] = (ub[upper_mask] -
-                             rstep * np.maximum(1, np.abs(ub[upper_mask])))
+                             rstep * tf.maximum(1, tf.abs(ub[upper_mask])))
 
     tight_bounds = (x_new < lb) | (x_new > ub)
     x_new[tight_bounds] = 0.5 * (lb[tight_bounds] + ub[tight_bounds])
@@ -148,33 +161,33 @@ def CL_scaling_vector(x, g, lb, ub):
 
     return v, dv
 
-
 def reflective_transformation(y, lb, ub):
     if in_bounds(y, lb, ub):
-        return y, np.ones_like(y)
+        return y, tf.ones_like(y)
 
-    lb_finite = np.isfinite(lb)
-    ub_finite = np.isfinite(ub)
+    lb_finite = tf.math.is_finite(lb)
+    ub_finite = tf.math.is_finite(ub)
 
-    x = y.copy()
-    g_negative = np.zeros_like(y, dtype=bool)
+    x = tf.identity(y)
+    g_negative = tf.zeros_like(y, dtype=bool)
 
     mask = lb_finite & ~ub_finite
-    x[mask] = np.maximum(y[mask], 2 * lb[mask] - y[mask])
-    g_negative[mask] = y[mask] < lb[mask]
+    #x[mask] = tf.maximum(y[mask], 2 * lb[mask] - y[mask])
+    #g_negative[mask] = y[mask] < lb[mask]
 
     mask = ~lb_finite & ub_finite
-    x[mask] = np.minimum(y[mask], 2 * ub[mask] - y[mask])
-    g_negative[mask] = y[mask] > ub[mask]
+    #x[mask] = np.minimum(y[mask], 2 * ub[mask] - y[mask])
+    #g_negative[mask] = y[mask] > ub[mask]
 
     mask = lb_finite & ub_finite
     d = ub - lb
-    t = np.remainder(y[mask] - lb[mask], 2 * d[mask])
-    x[mask] = lb[mask] + np.minimum(t, 2 * d[mask] - t)
-    g_negative[mask] = t > d[mask]
+    tmp = y[mask] - lb[mask]
+    t = tf.math.floormod(y[mask] - lb[mask], 2 * d[mask])
+    #x[mask] = lb[mask] + np.minimum(t, 2 * d[mask] - t)
+    #g_negative[mask] = t > d[mask]
 
-    g = np.ones_like(y)
-    g[g_negative] = -1
+    g = tf.ones_like(y)
+    #g[g_negative] = -1
 
     return x, g
 
