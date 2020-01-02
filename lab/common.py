@@ -106,16 +106,19 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     lower_active = (tf.math.is_finite(lb) &
                     (lower_dist <= tf.minimum(upper_dist, lower_threshold)))
     #active[lower_active] = -1
-    indices = tf.dtypes.cast(lower_active, tf.int32)
+    #indices = tf.dtypes.cast(lower_active, tf.int32)
     updates = tf.dtypes.cast(-1*tf.ones(active.shape), tf.int32)
-    active = tf.tensor_scatter_nd_update(active, indices, updates)
+    #active = tf.tensor_scatter_nd_update(active, indices, updates)
+    active = tf.where(tf.equal(lower_active,False), active, updates)
 
+    
     upper_active = (tf.math.is_finite(ub) &
                     (upper_dist <= tf.minimum(lower_dist, upper_threshold)))
     #active[upper_active] = 1
-    indices2 = tf.dtypes.cast(upper_active, tf.int32)
+    #indices2 = tf.dtypes.cast(upper_active, tf.int32)
     updates2 = tf.dtypes.cast(tf.ones(active.shape), tf.int32)
-    active = tf.tensor_scatter_nd_update(active, indices2, updates2)
+    #active = tf.tensor_scatter_nd_update(active, indices2, updates2)
+    active = tf.where(tf.equal(upper_active,False), active, updates2)
 
     return active
 
