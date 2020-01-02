@@ -233,7 +233,8 @@ def compute_grad(J, f):
     if isinstance(J, LinearOperator):
         return J.rmatvec(f)
     else:
-        return J.T.dot(f)
+        #return J.T.dot(f)
+        return tf.tensordot(tf.transpose(J), f, 1)
 
 
 def right_multiplied_operator(J, d):
