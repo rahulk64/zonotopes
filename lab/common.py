@@ -88,7 +88,6 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     active = tf.zeros_like(x, dtype=tf.int32)
     lb = tf.reshape(lb, x.shape)
     ub = tf.reshape(ub, x.shape)
-    
 
     if rtol == 0:
         active[x <= lb] = -1
@@ -125,6 +124,8 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
 
 def make_strictly_feasible(x, lb, ub, rstep=1e-10):
     x_new = tf.identity(x) #x.copy()
+    lb = tf.reshape(lb, x.shape)
+    ub = tf.reshape(ub, x.shape)
 
     active = find_active_constraints(x, lb, ub, rstep)
     lower_mask = tf.equal(active, -1)
@@ -134,13 +135,19 @@ def make_strictly_feasible(x, lb, ub, rstep=1e-10):
         x_new[lower_mask] = tf.nextafter(lb[lower_mask], ub[lower_mask])
         x_new[upper_mask] = tf.nextafter(ub[upper_mask], lb[upper_mask])
     else:
-        x_new[lower_mask] = (lb[lower_mask] +
-                             rstep * tf.maximum(1, tf.abs(lb[lower_mask])))
-        x_new[upper_mask] = (ub[upper_mask] -
-                             rstep * tf.maximum(1, tf.abs(ub[upper_mask])))
+        #x_new[lower_mask] = (lb[lower_mask] +
+        #                     rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(lb[lower_mask])))
+        x_new = tf.where(tf.equal(lower_mask, False), x_new, lb[lower_mask] +
+                             rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(lb[lower_mask])))
 
+        #x_new[upper_mask] = (ub[upper_mask] -
+        #                     rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(ub[upper_mask])))
+        x_new = tf.where(tf.equal(upper_mask, False), x_new, ub[upper_mask] -
+                             rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(ub[upper_mask])))
+        
     tight_bounds = (x_new < lb) | (x_new > ub)
-    x_new[tight_bounds] = 0.5 * (lb[tight_bounds] + ub[tight_bounds])
+    #x_new[tight_bounds] = 0.5 * (lb[tight_bounds] + ub[tight_bounds])
+    x_new = tf.where(tf.equal(tight_bounds, False), x_new, 0.5 * (lb[tight_bounds] + ub[tight_bounds])) 
 
     return x_new
 
@@ -171,7 +178,7 @@ def reflective_transformation(y, lb, ub):
     lb_finite = tf.math.is_finite(lb)
     ub_finite = tf.math.is_finite(ub)
 
-    x = tf.identity(y)
+    x = tf.dtypes.cast(tf.identity(y), dtype=tf.float64)
     g_negative = tf.zeros_like(y, dtype=bool)
 
     mask = lb_finite & ~ub_finite
