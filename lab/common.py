@@ -86,8 +86,10 @@ def step_size_to_bound(x, s, lb, ub):
 
 def find_active_constraints(x, lb, ub, rtol=1e-10):
     active = tf.zeros_like(x, dtype=tf.int32)
-    #lb = tf.reshape(lb, x.shape)
-    #ub = tf.reshape(ub, x.shape)
+    lb = tf.reshape(lb, tf.shape(x)) 
+    ub = tf.reshape(ub, tf.shape(x))
+
+    print("active", active.shape)
 
     if rtol == 0:
         active[x <= lb] = -1
@@ -106,11 +108,13 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
                     (lower_dist <= tf.minimum(upper_dist, lower_threshold)))
     #active[lower_active] = -1
     #indices = tf.dtypes.cast(lower_active, tf.int32)
-    #print("active.shape", active.shape)
     updates = tf.dtypes.cast(-1*tf.ones_like(active), tf.int32)
     #active = tf.tensor_scatter_nd_update(active, indices, updates)
     active = tf.where(tf.equal(lower_active,False), active, updates)
 
+    print("lower_active", lower_active.shape)
+    print("updates.shape", updates.shape)
+    print("active.shape", active.shape)
     
     upper_active = (tf.math.is_finite(ub) &
                     (upper_dist <= tf.minimum(lower_dist, upper_threshold)))
@@ -120,18 +124,22 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     #active = tf.tensor_scatter_nd_update(active, indices2, updates2)
     active = tf.where(tf.equal(upper_active,False), active, updates2)
 
+    print("active", active.shape)
+
     return active
 
 
 def make_strictly_feasible(x, lb, ub, rstep=1e-10):
     x_new = tf.identity(x) #x.copy()
-    #print("lb shape", lb.shape)
     #lb = tf.reshape(lb, x.shape)
     #ub = tf.reshape(ub, x.shape)
 
     active = find_active_constraints(x, lb, ub, rstep)
     lower_mask = tf.equal(active, -1)
     upper_mask = tf.equal(active, 1)
+
+    print("mask", lower_mask.shape)
+    print("lb", lb.shape)
 
     if rstep == 0:
         x_new[lower_mask] = tf.nextafter(lb[lower_mask], ub[lower_mask])
@@ -190,14 +198,14 @@ def reflective_transformation(y, lb, ub):
     mask = lb_finite & ~ub_finite
     #x[mask] = tf.maximum(y[mask], 2 * lb[mask] - y[mask])
     #g_negative[mask] = y[mask] < lb[mask]
-
     x = tf.where(tf.equal(mask, False), x, tf.maximum(y[mask], 2 * lb[mask] - y[mask]))
-    print(x.shape)
     g_negative = tf.where(tf.equal(mask, False), g_negative, y[mask] < lb[mask])
 
     mask = ~lb_finite & ub_finite
     #x[mask] = np.minimum(y[mask], 2 * ub[mask] - y[mask])
     #g_negative[mask] = y[mask] > ub[mask]
+    x = tf.where(tf.equal(mask, False), x, tf.minimum(y[mask], 2 * ub[mask] - y[mask]))
+    g_negative = tf.where(tf.equal(mask, False), g_negative, y[mask] > ub[mask])
 
     mask = lb_finite & ub_finite
     d = ub - lb
@@ -205,9 +213,12 @@ def reflective_transformation(y, lb, ub):
     t = tf.math.floormod(y[mask] - lb[mask], 2 * d[mask])
     #x[mask] = lb[mask] + np.minimum(t, 2 * d[mask] - t)
     #g_negative[mask] = t > d[mask]
+    x = tf.where(tf.equal(mask, False), x, lb[mask] + tf.minimum(t, 2 * d[mask] - t))
+    g_negative = tf.where(tf.equal(mask, False), g_negative, t > d[mask])
 
     g = tf.ones_like(y)
     #g[g_negative] = -1
+    g = tf.where(tf.equal(g_negative, False), g, -1)
 
     return x, g
 
