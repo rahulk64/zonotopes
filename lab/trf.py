@@ -115,7 +115,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #else:
             #termination_status = 0
 
-        if termination_status is not 0:
+        if not termination_status == 0: 
             break
 
         diag_h = np.diag(g.T * dv)
