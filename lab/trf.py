@@ -91,7 +91,9 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     #r = A.dot(x) - b
     r = tf.tensordot(A, x, 1) - b
     #g = compute_grad(A, r.T).T
-    g = tf.transpose(compute_grad(A, tf.transpose(r)))
+    #g = compute_grad(A, tf.transpose(r))
+    g = compute_grad(A, r) 
+    print("g,shape", g.shape)
     #cost = 0.5 * np.dot(r, r.T)
     cost = 0.5 * tf.tensordot(r, tf.transpose(r), 1)
     initial_cost = cost

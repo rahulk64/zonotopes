@@ -157,20 +157,28 @@ def CL_scaling_vector(x, g, lb, ub):
     v = tf.ones_like(x, dtype=tf.float64)
     dv = tf.zeros_like(x, dtype=tf.float64)
 
+    g = tf.reshape(g, tf.shape(ub))
     #mask = ((g < 0) & np.isfinite(ub))
     mask = ((g < 0) & tf.math.is_finite(ub))
     #mask = np.squeeze(np.asarray(mask))
 
-    v[mask] = ub[mask] - x[mask]
-    dv[mask] = -1
+    #v[mask] = ub[mask] - x[mask]
+    v = tf.where(tf.equal(mask, False), v, ub[mask]-x[mask])
+    #dv[mask] = -1
+    dv = tf.where(tf.equal(mask, False), dv, -1)
 
-    mask = (g > 0) & np.isfinite(lb)
-    mask = np.squeeze(np.asarray(mask))
-    v[mask] = x[mask] - lb[mask]
-    dv[mask] = 1
+    #mask = (g > 0) & np.isfinite(lb)
+    mask = ((g > 0) & tf.math.is_finite(lb))
+    #mask = np.squeeze(np.asarray(mask))
+    #v[mask] = x[mask] - lb[mask]
+    #dv[mask] = 1
+    v = tf.where(tf.equal(mask, False), v, x[mask]-lb[mask])
+    dv = tf.where(tf.equal(mask, False), dv, 1)
 
-    v.reshape(x.shape)
-    dv.reshape(x.shape)
+    #v.reshape(x.shape)
+    #dv.reshape(x.shape)
+    v = tf.reshape(v, tf.shape(x))
+    dv = tf.reshape(dv, tf.shape(x))
 
     return v, dv
 
