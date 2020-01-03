@@ -86,8 +86,8 @@ def step_size_to_bound(x, s, lb, ub):
 
 def find_active_constraints(x, lb, ub, rtol=1e-10):
     active = tf.zeros_like(x, dtype=tf.int32)
-    lb = tf.reshape(lb, x.shape)
-    ub = tf.reshape(ub, x.shape)
+    #lb = tf.reshape(lb, x.shape)
+    #ub = tf.reshape(ub, x.shape)
 
     if rtol == 0:
         active[x <= lb] = -1
@@ -106,7 +106,8 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
                     (lower_dist <= tf.minimum(upper_dist, lower_threshold)))
     #active[lower_active] = -1
     #indices = tf.dtypes.cast(lower_active, tf.int32)
-    updates = tf.dtypes.cast(-1*tf.ones(active.shape), tf.int32)
+    #print("active.shape", active.shape)
+    updates = tf.dtypes.cast(-1*tf.ones_like(active), tf.int32)
     #active = tf.tensor_scatter_nd_update(active, indices, updates)
     active = tf.where(tf.equal(lower_active,False), active, updates)
 
@@ -115,7 +116,7 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
                     (upper_dist <= tf.minimum(lower_dist, upper_threshold)))
     #active[upper_active] = 1
     #indices2 = tf.dtypes.cast(upper_active, tf.int32)
-    updates2 = tf.dtypes.cast(tf.ones(active.shape), tf.int32)
+    updates2 = tf.dtypes.cast(tf.ones_like(active), tf.int32)
     #active = tf.tensor_scatter_nd_update(active, indices2, updates2)
     active = tf.where(tf.equal(upper_active,False), active, updates2)
 
@@ -124,8 +125,9 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
 
 def make_strictly_feasible(x, lb, ub, rstep=1e-10):
     x_new = tf.identity(x) #x.copy()
-    lb = tf.reshape(lb, x.shape)
-    ub = tf.reshape(ub, x.shape)
+    #print("lb shape", lb.shape)
+    #lb = tf.reshape(lb, x.shape)
+    #ub = tf.reshape(ub, x.shape)
 
     active = find_active_constraints(x, lb, ub, rstep)
     lower_mask = tf.equal(active, -1)
@@ -153,11 +155,15 @@ def make_strictly_feasible(x, lb, ub, rstep=1e-10):
 
 
 def CL_scaling_vector(x, g, lb, ub):
-    v = np.ones_like(x)
-    dv = np.zeros_like(x)
+    #v = np.ones_like(x)
+    #dv = np.zeros_like(x)
+    v = tf.ones_like(x, dtype=tf.float64)
+    dv = tf.zeros_like(x, dtype=tf.float64)
 
-    mask = ((g < 0) & np.isfinite(ub))
-    mask = np.squeeze(np.asarray(mask))
+    #mask = ((g < 0) & np.isfinite(ub))
+    mask = ((g < 0) & tf.math.is_finite(ub))
+    #mask = np.squeeze(np.asarray(mask))
+
     v[mask] = ub[mask] - x[mask]
     dv[mask] = -1
 
@@ -184,6 +190,10 @@ def reflective_transformation(y, lb, ub):
     mask = lb_finite & ~ub_finite
     #x[mask] = tf.maximum(y[mask], 2 * lb[mask] - y[mask])
     #g_negative[mask] = y[mask] < lb[mask]
+
+    x = tf.where(tf.equal(mask, False), x, tf.maximum(y[mask], 2 * lb[mask] - y[mask]))
+    print(x.shape)
+    g_negative = tf.where(tf.equal(mask, False), g_negative, y[mask] < lb[mask])
 
     mask = ~lb_finite & ub_finite
     #x[mask] = np.minimum(y[mask], 2 * ub[mask] - y[mask])
