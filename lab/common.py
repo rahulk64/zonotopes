@@ -89,8 +89,6 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     lb = tf.reshape(lb, tf.shape(x)) 
     ub = tf.reshape(ub, tf.shape(x))
 
-    print("active", active.shape)
-
     if rtol == 0:
         active[x <= lb] = -1
         active[x >= ub] = 1
@@ -112,10 +110,6 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     #active = tf.tensor_scatter_nd_update(active, indices, updates)
     active = tf.where(tf.equal(lower_active,False), active, updates)
 
-    print("lower_active", lower_active.shape)
-    print("updates.shape", updates.shape)
-    print("active.shape", active.shape)
-    
     upper_active = (tf.math.is_finite(ub) &
                     (upper_dist <= tf.minimum(lower_dist, upper_threshold)))
     #active[upper_active] = 1
@@ -124,22 +118,17 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     #active = tf.tensor_scatter_nd_update(active, indices2, updates2)
     active = tf.where(tf.equal(upper_active,False), active, updates2)
 
-    print("active", active.shape)
-
     return active
 
 
 def make_strictly_feasible(x, lb, ub, rstep=1e-10):
     x_new = tf.identity(x) #x.copy()
-    #lb = tf.reshape(lb, x.shape)
-    #ub = tf.reshape(ub, x.shape)
+    lb = tf.reshape(lb, tf.shape(x))
+    ub = tf.reshape(ub, tf.shape(x))
 
     active = find_active_constraints(x, lb, ub, rstep)
     lower_mask = tf.equal(active, -1)
     upper_mask = tf.equal(active, 1)
-
-    print("mask", lower_mask.shape)
-    print("lb", lb.shape)
 
     if rstep == 0:
         x_new[lower_mask] = tf.nextafter(lb[lower_mask], ub[lower_mask])
