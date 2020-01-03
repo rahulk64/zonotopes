@@ -67,6 +67,7 @@ def projZonotope(A, b, n, m):
 @tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                verbose):
+    tol = tf.constant(tol, dtype=tf.float64)
     m, n = A.shape
     x, _ = reflective_transformation(x_lsq, lb, ub)
     x = make_strictly_feasible(x, lb, ub, rstep=0.1)
@@ -93,34 +94,28 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     #g = compute_grad(A, r.T).T
     #g = compute_grad(A, tf.transpose(r))
     g = compute_grad(A, r) 
-    print("g,shape", g.shape)
     #cost = 0.5 * np.dot(r, r.T)
     cost = 0.5 * tf.tensordot(r, tf.transpose(r), 1)
     initial_cost = cost
 
-    termination_status = None
+    termination_status = 0 
     step_norm = None
     cost_change = None
 
     if max_iter is None:
         max_iter = 100
 
-    if verbose == 2:
-        print_header_linear()
-
     for iteration in range(max_iter):
         print("iteration")
         v, dv = CL_scaling_vector(x, g, lb, ub)
-        g_scaled = g.T * v 
-        g_norm = norm(g_scaled, ord=np.inf)
+        g_scaled = tf.transpose(g) * v 
+        g_norm = tf.norm(g_scaled, ord=np.inf)
         if g_norm < tol:
             termination_status = 1
+        #else:
+            #termination_status = 0
 
-        if verbose == 2:
-            print_iteration_linear(iteration, cost, cost_change,
-                                   step_norm, g_norm)
-
-        if termination_status is not None:
+        if termination_status is not 0:
             break
 
         diag_h = np.diag(g.T * dv)
@@ -169,9 +164,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
             termination_status = 2
 
         cost = 0.5 * np.dot(r, r.T)
-
-    if termination_status is None:
-        termination_status = 0
 
     active_mask = find_active_constraints(x, lb, ub, rtol=tol)
 
