@@ -152,6 +152,8 @@ def make_strictly_feasible(x, lb, ub, rstep=1e-10):
 
 
 def CL_scaling_vector(x, g, lb, ub):
+    lb = tf.reshape(lb, tf.shape(x))
+    ub = tf.reshape(ub, tf.shape(x))
     #v = np.ones_like(x)
     #dv = np.zeros_like(x)
     v = tf.ones_like(x, dtype=tf.float64)

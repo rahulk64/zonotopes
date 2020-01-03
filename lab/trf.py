@@ -67,6 +67,9 @@ def projZonotope(A, b, n, m):
 @tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                verbose):
+    lb = tf.reshape(lb, tf.shape(x_lsq))
+    ub = tf.reshape(ub, tf.shape(x_lsq))
+
     tol = tf.constant(tol, dtype=tf.float64)
     m, n = A.shape
     x, _ = reflective_transformation(x_lsq, lb, ub)
@@ -118,10 +121,12 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         if not termination_status == 0: 
             break
 
-        diag_h = np.diag(g.T * dv)
+        #diag_h = np.diag(g.T * dv)
+        diag_h = tf.linalg.diag_part(tf.transpose(g) * dv)
         diag_root_h = diag_h ** 0.5
         d = v ** 0.5
-        g_h = d * np.squeeze(np.asarray(g.T))
+        #g_h = d * np.squeeze(np.asarray(g.T))
+        g_h = d * g
 
         A_h = right_multiplied_operator(A, d)
         if lsq_solver == 'exact':
