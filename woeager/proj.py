@@ -38,6 +38,7 @@ def projZonotope(A, b):
     neg_ones = -1 * ones
 
     x_lsq = lsmr(A, b, atol=1e-10, btol=1e-10)[0]
+    print("x_lsq", x_lsq)
     eps = trf_linear(A, b, x_lsq, neg_ones, ones, 1e-13, 'lsmr', None, 200, 0)
 
     return eps

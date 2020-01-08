@@ -54,6 +54,24 @@ def _sym_ortho(a, b):
         r = a / c
     return c, s, r
 
+def matmat(A, X):
+    X = np.asanyarray(X)
+    if X.ndim != 2:
+        raise ValueError('expected 2-d ndarray or matrix, not %d-d'
+                              % X.ndim)
+
+    if X.shape[0] != A.shape[1]:
+        raise ValueError('dimension mismatch: %r, %r'
+                      % (A.shape, X.shape))
+
+    #Y = self._matmat(X)
+    Y = A.dot(X)
+
+    #if isinstance(Y, np.matrix):
+    #    Y = asmatrix(Y)
+
+    return Y
+
 def matvec(A, x):
     M,N = A.shape
 
@@ -63,7 +81,8 @@ def matvec(A, x):
         raise ValueError('dimension mismatch')
 
     #y = self._matvec(x)
-    y = A.matmat(x.reshape(-1, 1))
+    #y = A.matmat(x.reshape(-1, 1))
+    y = matmat(A, x.reshape(-1, 1))
 
     if isinstance(x, np.matrix):
         y = asmatrix(y)
@@ -82,6 +101,8 @@ def rmatvec(A, x):
     m, n = A.shape
     x1 = x[:m]
     x2 = x[m:]
+
+    print("A:", A)
 
     x = np.asanyarray(x)
 
@@ -130,6 +151,7 @@ def lsmr(A, b, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         x = zeros(n, dtype)
         beta = normb.copy()
     else:
+        print("this should not run")
         x = atleast_1d(x0)
         #u = u - A.matvec(x)
         y = matvec(A, x)
@@ -139,7 +161,6 @@ def lsmr(A, b, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         else:
             u = u - y
         beta = norm(u)
-        #u = u.T
 
     if beta > 0:
         u = (1 / beta) * u
@@ -151,6 +172,7 @@ def lsmr(A, b, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         else:
             v = y
         alpha = norm(v)
+        print("alpha", alpha)
         #v = v.T
     else:
         v = zeros(n, dtype)
@@ -222,8 +244,6 @@ def lsmr(A, b, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         if diag is not None:
             u += np.hstack((myvar, diag * x))
         else:
-            print(u.shape)
-            print(myvar.shape)
             u += myvar
         beta = norm(u)
 
@@ -240,6 +260,7 @@ def lsmr(A, b, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             alpha = norm(v)
             if alpha > 0:
                 v *= (1 / alpha)
+            print("v:", v)
 
         # At this point, beta = beta_{k+1}, alpha = alpha_{k+1}.
 
