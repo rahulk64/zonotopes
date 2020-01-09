@@ -125,6 +125,8 @@ def rmatvec(A, x):
         y = y.reshape(N,1)
     else:
         raise ValueError('invalid shape returned by user-defined rmatvec()')
+
+    print("rmo:", y)
     return y
 
 def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
@@ -163,11 +165,9 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         else:
             u = u - y
         beta = norm(u)
-    print("beta:", beta)
-    print("u", u)
 
-    print("A:", A)
-    print("shape:", A.shape)
+    print("u:", u)
+
     if beta > 0:
         u = (1 / beta) * u
         #v = A.rmatvec(u)
@@ -176,9 +176,7 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             x1 = u[:m]
             x2 = u[m:]
             rmo = d * rmatvec(A, x1)
-            print("rmo:", rmo)
-            y = rmo + diag * x2
-            v = y
+            v = rmo + diag * x2
             #v = y + diag * x2
         else:
             v = rmatvec(A, u)
@@ -253,7 +251,10 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         myvar = matvec(A, v)
         myvar = np.squeeze(np.asarray(myvar))
         if diag is not None:
-            u += np.hstack((myvar, diag * x))
+            #u += np.hstack((myvar, diag * x))
+            rmo = matvec(A, np.ravel(v) * d)
+            y = np.hstack((rmo, diag * v))
+            u += y
         else:
             u += myvar
         beta = norm(u)
@@ -262,11 +263,16 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             u *= (1 / beta)
             v *= -beta
             #v += A.rmatvec(u)
-            myvar = rmatvec(A, u)
+            #myvar = rmatvec(A, u)
             if diag is not None:
-                v += myvar + diag * x2
+                #v += myvar + diag * x2
+                x1 = u[:m]
+                x2 = u[m:]
+                rmo = d * rmatvec(A, x1)
+                y = rmo + diag * x2
+                v += y
             else:
-                v += myvar
+                v += rmatvec(A, u)
 
             alpha = norm(v)
             if alpha > 0:

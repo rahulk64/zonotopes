@@ -46,7 +46,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
     for iteration in range(max_iter):
         v, dv = CL_scaling_vector(x, g, lb, ub)
-        print("V", v.shape)
         g_scaled = g.T * v 
         g_norm = norm(g_scaled, ord=np.inf)
         if g_norm < tol:
@@ -61,7 +60,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         g_h = d * np.squeeze(np.asarray(g.T))
 
         A_h = right_multiplied_operator(A, d)
-        lsmr_op = regularized_lsq_operator(A_h, diag_root_h)
+        #lsmr_op = regularized_lsq_operator(A_h, diag_root_h)
         r_aug[:m] = r
         if auto_lsmr_tol:
             eta = 1e-2 * min(0.5, g_norm)
