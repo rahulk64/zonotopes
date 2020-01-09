@@ -6,7 +6,6 @@ from math import copysign
 import numpy as np
 from numpy.linalg import norm
 
-from linop import LinearOperator, aslinearoperator
 from lsmr import matvec
 
 EPS = np.finfo(float).eps
@@ -204,39 +203,5 @@ def reflective_transformation(y, lb, ub):
 # Simple helper functions.
 
 def compute_grad(J, f):
-    if isinstance(J, LinearOperator):
-        return J.rmatvec(f)
-    else:
-        return J.T.dot(f)
-
-
-def right_multiplied_operator(J, d):
-    J = aslinearoperator(J)
-
-    def matvec(x):
-        return J.matvec(np.ravel(x) * d)
-
-    def matmat(X):
-        return J.matmat(X * d[:, np.newaxis])
-
-    def rmatvec(x):
-        return d * J.rmatvec(x)
-
-    return LinearOperator(J.shape, matvec=matvec, matmat=matmat,
-                          rmatvec=rmatvec)
-
-
-def regularized_lsq_operator(J, diag):
-    J = aslinearoperator(J)
-    m, n = J.shape
-
-    def matvec(x):
-        return np.hstack((J.matvec(x), diag * x))
-
-    def rmatvec(x):
-        x1 = x[:m]
-        x2 = x[m:]
-        return J.rmatvec(x1) + diag * x2
-
-    return LinearOperator((m + n, n), matvec=matvec, rmatvec=rmatvec)
+    return J.T.dot(f)
 

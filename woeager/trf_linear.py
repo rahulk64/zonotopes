@@ -1,5 +1,4 @@
 import numpy as np
-from linop import LinearOperator
 from numpy.linalg import norm
 from lsmr import lsmr 
 
@@ -7,7 +6,7 @@ from common import (
     EPS, step_size_to_bound, find_active_constraints, in_bounds,
     make_strictly_feasible, build_quadratic_1d, evaluate_quadratic,
     minimize_quadratic_1d, CL_scaling_vector, reflective_transformation,
-    compute_grad, regularized_lsq_operator, right_multiplied_operator)
+    compute_grad) 
     
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                verbose):
