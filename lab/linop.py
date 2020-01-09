@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 class LinearOperator(object):
     def __new__(cls, *args, **kwargs):
@@ -17,8 +18,9 @@ class LinearOperator(object):
             return obj
 
     def __init__(self, dtype, shape):
-        if dtype is not None:
-            dtype = np.dtype(dtype)
+        #if dtype is not None:
+            #dtype = np.dtype(dtype)
+        dtype = dtype
 
         shape = tuple(shape)
         if not isshape(shape):
@@ -301,30 +303,33 @@ def isshape(x, nonneg=False):
                 return True
         return False
 
+@tf.function
 def aslinearoperator(A):
-    if isinstance(A, LinearOperator):
-        return A
+    #if isinstance(A, LinearOperator):
+    #    return A
 
-    elif isinstance(A, np.ndarray) or isinstance(A, np.matrix):
-        if A.ndim > 2:
-            raise ValueError('array must have ndim <= 2')
-        A = np.atleast_2d(np.asarray(A))
-        return MatrixLinearOperator(A)
+    #elif isinstance(A, np.ndarray) or isinstance(A, np.matrix):
+        #if A.ndim > 2:
+    print("rank:",tf.get_static_value(tf.rank(A)), "should be <= 2")
+    #if tf.math.greater(tf.rank(A), 2):
+    #    raise ValueError('array must have ndim <= 2')
+    #A = np.atleast_2d(np.asarray(A))
+    return MatrixLinearOperator(A)
 
-    else:
-        if hasattr(A, 'shape') and hasattr(A, 'matvec'):
-            rmatvec = None
-            rmatmat = None
-            dtype = None
-
-            if hasattr(A, 'rmatvec'):
-                rmatvec = A.rmatvec
-            if hasattr(A, 'rmatmat'):
-                rmatmat = A.rmatmat
-            if hasattr(A, 'dtype'):
-                dtype = A.dtype
-            return LinearOperator(A.shape, A.matvec, rmatvec=rmatvec,
-                                  rmatmat=rmatmat, dtype=dtype)
-
-        else:
-            raise TypeError('type not understood')
+    #else:
+    #    if hasattr(A, 'shape') and hasattr(A, 'matvec'):
+    #        rmatvec = None
+    #        rmatmat = None
+    #        dtype = None
+    #
+    #        if hasattr(A, 'rmatvec'):
+    #            rmatvec = A.rmatvec
+    #        if hasattr(A, 'rmatmat'):
+    #            rmatmat = A.rmatmat
+    #        if hasattr(A, 'dtype'):
+    #            dtype = A.dtype
+    #        return LinearOperator(A.shape, A.matvec, rmatvec=rmatvec,
+    #                              rmatmat=rmatmat, dtype=dtype)
+    #
+    #    else:
+    #        raise TypeError('type not understood')
