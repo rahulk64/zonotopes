@@ -1,5 +1,5 @@
 import numpy as np
-#import tensorflow as tf
+import tensorflow as tf
 
 # NOTE AND REMINDER TO INCLUDE COPYRIGHT NOTICES
 
@@ -140,11 +140,12 @@ def rmatvec(A, x):
 
 def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
          maxiter=None, show=False, x0=None):
+    print("b.shape", b.shape)
 
     #A = aslinearoperator(A)
-    b = atleast_1d(b)
-    if b.ndim > 1:
-        b = b.squeeze()
+    #b = atleast_1d(b)
+    if tf.rank(b) > 1:
+        b = tf.squeeze(b) 
 
     m, n = A.shape
 
@@ -157,14 +158,19 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
     if maxiter is None:
         maxiter = minDim
 
-    dtype = result_type(A, b, float)
+    #dtype = result_type(A, b, float)
+    dtype = tf.float64
 
     u = b
-    normb = norm(b)
+    #normb = norm(b)
+    print("b.shape", b.shape)
+    normb = tf.norm(b, ord='euclidean')
     if x0 is None:
-        x = zeros(n, dtype)
-        beta = normb.copy()
+        x = tf.zeros(n, dtype=tf.float64)
+        #beta = normb.copy()
+        beta = tf.identity(normb)
     else:
+        print("this is not technically supported but it might work")
         x = atleast_1d(x0)
         #u = u - A.matvec(x)
         y = matvec(A, x)
