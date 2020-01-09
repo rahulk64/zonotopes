@@ -91,9 +91,9 @@ def matvec(A, x):
 
     #x = np.asanyarray(x)
 
-    if x.shape != (N,) and x.shape != (N,1):
-        raise ValueError('dimension mismatch: %r, %r'
-                      % (A.shape, x.shape))
+    #if x.shape != (N,) and x.shape != (N,1):
+    #    raise ValueError('dimension mismatch: %r, %r'
+    #                  % (A.shape, x.shape))
 
     #y = self._matvec(x)
     #y = A.matmat(x.reshape(-1, 1))
@@ -207,8 +207,8 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             v = rmatvec(A, u)
         alpha = tf.norm(v, ord='euclidean')
     else:
-        v = zeros(n, dtype)
-        alpha = 0
+        v = tf.zeros(n, dtype=tf.float64)
+        alpha = tf.Variable(0.0, dtype=tf.float64)
 
     if alpha > 0:
         v = (1 / alpha) * v
@@ -223,8 +223,9 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
     cbar = 1
     sbar = 0
 
-    h = v.copy()
-    hbar = zeros(n, dtype)
+    #h = v.copy()
+    h = tf.identity(v)
+    hbar = tf.zeros(n, dtype=tf.float64)
 
     # Initialize variables for estimation of ||r||.
 
@@ -241,7 +242,8 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
     normA2 = alpha * alpha
     maxrbar = 0
     minrbar = 1e+100
-    normA = sqrt(normA2)
+    #normA = sqrt(normA2)
+    normA = tf.math.sqrt(normA2)
     condA = 1
     normx = 0
 
