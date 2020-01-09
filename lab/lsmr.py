@@ -85,7 +85,7 @@ def matmat(A, X):
 def matvec(A, x):
     M,N = A.shape
 
-    x = np.asanyarray(x)
+    #x = np.asanyarray(x)
 
     if x.shape != (N,) and x.shape != (N,1):
         raise ValueError('dimension mismatch: %r, %r'
@@ -113,7 +113,7 @@ def rmatvec(A, x):
     x1 = x[:m]
     x2 = x[m:]
 
-    x = np.asanyarray(x)
+    #x = np.asanyarray(x)
 
     M,N = A.shape
 
@@ -122,7 +122,8 @@ def rmatvec(A, x):
                       % (A.shape, x.shape))
 
     #y = self._rmatvec(x)
-    y = matvec(A.H, x)
+    #y = matvec(A.H, x)
+    y = matvec(tf.linalg.adjoint(A), x)
 
     if isinstance(x, np.matrix):
         y = asmatrix(y)
@@ -140,7 +141,6 @@ def rmatvec(A, x):
 
 def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
          maxiter=None, show=False, x0=None):
-    print("b.shape", b.shape)
 
     #A = aslinearoperator(A)
     #b = atleast_1d(b)
@@ -163,7 +163,6 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
 
     u = b
     #normb = norm(b)
-    print("b.shape", b.shape)
     normb = tf.norm(b, ord='euclidean')
     if x0 is None:
         x = tf.zeros(n, dtype=tf.float64)
@@ -398,25 +397,6 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         if test1 <= rtol:
             istop = 1
 
-        # See if it is time to print something.
-
-        if show:
-            if (n <= 40) or (itn <= 10) or (itn >= maxiter - 10) or \
-               (itn % 10 == 0) or (test3 <= 1.1 * ctol) or \
-               (test2 <= 1.1 * atol) or (test1 <= 1.1 * rtol) or \
-               (istop != 0):
-
-                if pcount >= pfreq:
-                    pcount = 0
-                    print(' ')
-                    print(hdg1, hdg2)
-                pcount = pcount + 1
-                str1 = '%6g %12.5e' % (itn, x[0])
-                str2 = ' %10.3e %10.3e' % (normr, normar)
-                str3 = '  %8.1e %8.1e' % (test1, test2)
-                str4 = ' %8.1e %8.1e' % (normA, condA)
-                print(''.join([str1, str2, str3, str4]))
-
         if istop > 0:
             break
 
@@ -456,9 +436,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
     if max_iter is None:
         max_iter = 100
-
-    if verbose == 2:
-        print_header_linear()
 
     for iteration in range(max_iter):
         v, dv = CL_scaling_vector(x, g, lb, ub)
