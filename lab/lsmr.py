@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 import tensorflow as tf
 
 # NOTE AND REMINDER TO INCLUDE COPYRIGHT NOTICES
@@ -65,17 +66,20 @@ def _sym_ortho(a, b):
     return c, s, r
 
 def matmat(A, X):
-    X = np.asanyarray(X)
-    if X.ndim != 2:
-        raise ValueError('expected 2-d ndarray or matrix, not %d-d'
-                              % X.ndim)
+    #X = np.asanyarray(X)
+    if tf.rank(X) != 2:
+        print("X shape", X.shape)
+        tf.print("x:", X, output_stream=sys.stdout)
+        tf.print("x rank:", tf.rank(X), output_stream=sys.stdout)
+        #raise ValueError('expected 2-d ndarray or matrix, not', tf.rank(X))
 
     if X.shape[0] != A.shape[1]:
         raise ValueError('dimension mismatch: %r, %r'
                       % (A.shape, X.shape))
 
     #Y = self._matmat(X)
-    Y = A.dot(X)
+    #Y = A.dot(X)
+    Y = tf.tensordot(A, X, axes=1)
 
     #if isinstance(Y, np.matrix):
     #    Y = asmatrix(Y)
@@ -93,19 +97,24 @@ def matvec(A, x):
 
     #y = self._matvec(x)
     #y = A.matmat(x.reshape(-1, 1))
-    y = matmat(A, x.reshape(-1, 1))
+    #y = matmat(A, x.reshape(-1, 1))
+    y = matmat(A, tf.reshape(x, (-1, 1)))
 
-    if isinstance(x, np.matrix):
-        y = asmatrix(y)
-    else:
-        y = np.asarray(y)
+    #if isinstance(x, np.matrix):
+    #    y = asmatrix(y)
+    #else:
+    #    y = np.asarray(y)
 
-    if x.ndim == 1:
-        y = y.reshape(M)
-    elif x.ndim == 2:
-        y = y.reshape(M,1)
+    if tf.rank(x) == 1:
+        #y = y.reshape(M)
+        y = tf.reshape(y, (M,))
+    elif tf.rank(x) == 2:
+        #y = y.reshape(M,1)
+        y = tf.reshape(y, (M,1))
     else:
-        raise ValueError('invalid shape returned by user-defined matvec()')
+        #raise ValueError('invalid shape returned by user-defined matvec()')
+        print('invalid shape returned by user-defined matvec()')
+
     return y
 
 def rmatvec(A, x):
@@ -125,17 +134,20 @@ def rmatvec(A, x):
     #y = matvec(A.H, x)
     y = matvec(tf.linalg.adjoint(A), x)
 
-    if isinstance(x, np.matrix):
-        y = asmatrix(y)
-    else:
-        y = np.asarray(y)
+    #if isinstance(x, np.matrix):
+    #    y = asmatrix(y)
+    #else:
+    #    y = np.asarray(y)
 
-    if x.ndim == 1:
-        y = y.reshape(N)
-    elif x.ndim == 2:
-        y = y.reshape(N,1)
+    if tf.rank(x)  == 1:
+        #y = y.reshape(N)
+        y = tf.reshape(y, (N,))
+    elif tf.rank(x)  == 2:
+        #y = y.reshape(N,1)
+        y = tf.reshape(y, (N,1))
     else:
-        raise ValueError('invalid shape returned by user-defined rmatvec()')
+        #raise ValueError('invalid shape returned by user-defined rmatvec()')
+        print('invalid shape returned by user-defined rmatvec()')
 
     return y
 
