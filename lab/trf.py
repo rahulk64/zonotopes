@@ -78,7 +78,10 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
         #A_h = right_multiplied_operator(A, d)
         #lsmr_op = regularized_lsq_operator(A_h, diag_root_h)
-        r_aug[:m] = r
+
+        #r_aug[:m] = r
+        r_aug = tf.Variable(tf.convert_to_tensor(r_aug))
+        r_aug = r_aug[:m].assign(r*tf.ones(m, dtype=tf.float64))
         if auto_lsmr_tol:
             eta = 1e-2 * min(0.5, g_norm)
             lsmr_tol = max(EPS, min(0.1, eta * g_norm))
