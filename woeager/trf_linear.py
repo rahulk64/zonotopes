@@ -66,7 +66,8 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         if auto_lsmr_tol:
             eta = 1e-2 * min(0.5, g_norm)
             lsmr_tol = max(EPS, min(0.1, eta * g_norm))
-        p_h = -lsmr(lsmr_op, r_aug, diag_root_h, atol=lsmr_tol, btol=lsmr_tol)[0]
+        #p_h = -lsmr(lsmr_op, r_aug, diag_root_h, atol=lsmr_tol, btol=lsmr_tol)[0]
+        p_h = -lsmr(A, r_aug, d=d, diag=diag_root_h, atol=lsmr_tol, btol=lsmr_tol)[0]
 
         p = d * p_h
 

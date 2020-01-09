@@ -78,7 +78,8 @@ def matvec(A, x):
     x = np.asanyarray(x)
 
     if x.shape != (N,) and x.shape != (N,1):
-        raise ValueError('dimension mismatch')
+        raise ValueError('dimension mismatch: %r, %r'
+                      % (A.shape, x.shape))
 
     #y = self._matvec(x)
     #y = A.matmat(x.reshape(-1, 1))
@@ -102,14 +103,13 @@ def rmatvec(A, x):
     x1 = x[:m]
     x2 = x[m:]
 
-    print("A:", A)
-
     x = np.asanyarray(x)
 
     M,N = A.shape
 
     if x.shape != (M,) and x.shape != (M,1):
-        raise ValueError('dimension mismatch')
+        raise ValueError('dimension mismatch: %r, %r'
+                      % (A.shape, x.shape))
 
     #y = self._rmatvec(x)
     y = matvec(A.H, x)
@@ -127,7 +127,7 @@ def rmatvec(A, x):
         raise ValueError('invalid shape returned by user-defined rmatvec()')
     return y
 
-def lsmr(A, b, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
+def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
          maxiter=None, show=False, x0=None):
 
     #A = aslinearoperator(A)
@@ -157,20 +157,31 @@ def lsmr(A, b, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         y = matvec(A, x)
         
         if diag is not None:
-            u = u - np.hstack((y, diag * x))
+            rmo = matvec(A, np.ravel(x) * d)
+            y = np.hstack((rmo, diag * x))
+            u = u - y
         else:
             u = u - y
         beta = norm(u)
+    print("beta:", beta)
+    print("u", u)
 
+    print("A:", A)
+    print("shape:", A.shape)
     if beta > 0:
         u = (1 / beta) * u
         #v = A.rmatvec(u)
-        y = rmatvec(A, u)
         
         if diag is not None:
-            v = y + diag * x2
-        else:
+            x1 = u[:m]
+            x2 = u[m:]
+            rmo = d * rmatvec(A, x1)
+            print("rmo:", rmo)
+            y = rmo + diag * x2
             v = y
+            #v = y + diag * x2
+        else:
+            v = rmatvec(A, u)
         alpha = norm(v)
         print("alpha", alpha)
         #v = v.T
@@ -260,7 +271,6 @@ def lsmr(A, b, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             alpha = norm(v)
             if alpha > 0:
                 v *= (1 / alpha)
-            print("v:", v)
 
         # At this point, beta = beta_{k+1}, alpha = alpha_{k+1}.
 
