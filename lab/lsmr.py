@@ -205,7 +205,7 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             v = rmo + diag * x2
         else:
             v = rmatvec(A, u)
-        alpha = norm(v)
+        alpha = tf.norm(v, ord='euclidean')
     else:
         v = zeros(n, dtype)
         alpha = 0
@@ -279,7 +279,7 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             u += y
         else:
             u += myvar
-        beta = norm(u)
+        beta = tf.norm(u, ord='euclidean')
 
         if beta > 0:
             u *= (1 / beta)
@@ -294,7 +294,7 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             else:
                 v += rmatvec(A, u)
 
-            alpha = norm(v)
+            alpha = tf.norm(v, ord='euclidean')
             if alpha > 0:
                 v *= (1 / alpha)
 
