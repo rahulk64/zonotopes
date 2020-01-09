@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from numpy.linalg import norm
 
-from lsm import lsmr 
+from lsmr import lsmr 
 
 from common import (
     EPS, step_size_to_bound, find_active_constraints, in_bounds,
@@ -11,55 +11,6 @@ from common import (
     minimize_quadratic_1d, CL_scaling_vector, reflective_transformation,
     print_header_linear, print_iteration_linear, compute_grad)
 
-"""
-Projects a point onto a zonotope, that is, finds the point
-in the zonotope that is closest to the desired point to be
-projected. Returns epsilon value in the form:
-
-    A * eps + b' = c
-
-Where A is matrix passed in, and parameter b = c - b'
-b' is the center of the zonotope, c is the point to be projected
-
-Utilizes lsq_linear algorithm in scipy.optimize, so there
-will be some error in calculation due to forcing matrix 
-into a sparse representation to work with scipy.
-
-Parameters
-----------
-A: matrix (n x m) representing zonotope centered at the origin
-b: point in R^n to project onto zonotope A
-n: length of matrix A
-m: width of matrix A
-
-Returns
--------
-eps: point in R^m representing the projection
-"""
-
-@tf.function
-def projZonotope(A, b, n, m):
-    #un-ravel
-    #A = tf.reshape(A_arg, (n,m))
-    #A = A_arg
-    ones = np.squeeze(np.asarray(np.ones(A.shape[1], )))
-    neg_ones = -1 * ones
-    #A_coo = csr_matrix(A)
-
-    A = tf.cast(A, tf.float64)
-    b = tf.cast(b, tf.float64)
-    b = tf.reshape(b, (tf.size(b), 1))
-
-    x_lsq = tf.linalg.lstsq(A, b)
-    print(x_lsq.shape)
-    #eps = bvls(A, b, x_lsq, neg_ones, ones, 1e-13, 200, 2)
-    eps = trf_linear(A, b, x_lsq, neg_ones, ones, 1e-13, 'lsmr', 1e-13, 200, 0)
-
-    #NOTE THIS WORKS
-    #eps = lsq_linear(A_coo, b, bounds=(neg_ones, ones), lsq_solver='lsmr', lsmr_tol=1e-13, verbose=0).x
-    #eps = lsq_linear(A, b, bounds=(neg_ones, ones), lsq_solver='exact', lsmr_tol=1e-13, verbose=0).x
-    #eps = tf.py_function(calcLSQ, [A, b], (tf.float64,tf.float64))
-    return eps
 
 @tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
@@ -238,32 +189,3 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
         return r
     else:
         return ag
-
-#Example usage of projZonotope
-#A = tf.constant(np.matrix("-4 0 2 3 ; -2 1 0 -1"))
-A = np.matrix("-4 0 2 3 ; -2 1 0 -1")
-b = np.matrix("20 10")
-k = np.matrix("30 10")
-
-#should probs include this in the function
-A_eval = k - b
-A_eval = np.squeeze(np.asarray(A_eval))
-
-n = A.shape[0]
-m = A.shape[1]
-
-#A_arg = np.asarray(A).ravel()
-#print(A_arg)
-#A_arg = A
-
-eps = projZonotope(A, A_eval, n, m)
-print("eps", eps)
-print("Ae", np.matmul(A, eps))
-"""
-with tf.Session() as sess:
-    e = sess.run(eps)
-    print("A", A)
-    print("eps", eps)
-    print("Ae", np.matmul(A, eps))
-    print("end", np.add(np.matmul(A, eps), b))
-"""

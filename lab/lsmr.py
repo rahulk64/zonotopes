@@ -1,7 +1,5 @@
 import numpy as np
 #import tensorflow as tf
-#from scipy.optimize import lsq_linear
-
 
 # NOTE AND REMINDER TO INCLUDE COPYRIGHT NOTICES
 
@@ -522,31 +520,3 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         nit=iteration + 1, status=termination_status,
         initial_cost=initial_cost)
 
-#Example usage of projZonotope
-#A = tf.constant(np.matrix("-4 0 2 3 ; -2 1 0 -1"))
-A = np.matrix("-4 0 2 3 ; -2 1 0 -1")
-b = np.matrix("20 10")
-k = np.matrix("30 10")
-
-#should probs include this in the function
-A_eval = k - b
-A_eval = np.squeeze(np.asarray(A_eval))
-
-n = A.shape[0]
-m = A.shape[1]
-
-#A_arg = np.asarray(A).ravel()
-#print(A_arg)
-#A_arg = A
-
-eps = projZonotope(A, A_eval, n, m)
-print("eps", eps)
-print("Ae", np.matmul(A, eps))
-"""
-with tf.Session() as sess:
-    e = sess.run(eps)
-    print("A", A)
-    print("eps", eps)
-    print("Ae", np.matmul(A, eps))
-    print("end", np.add(np.matmul(A, eps), b))
-"""
