@@ -77,7 +77,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         theta = 1 - min(0.005, g_norm)
 
         step = select_step(x, A, g_h, diag_h, p, p_h, d, lb, ub, theta)
-        print("step:", step)
+        print("step", step)
         cost_change = -evaluate_quadratic(A, g, step)
 
         # Perhaps almost never executed, the idea is that `p` is descent
