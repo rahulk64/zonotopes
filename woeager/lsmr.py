@@ -176,11 +176,9 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             x2 = u[m:]
             rmo = dis * rmatvec(A, x1)
             v = rmo + diag * x2
-            #v = y + diag * x2
         else:
             v = rmatvec(A, u)
         alpha = norm(v)
-        #v = v.T
     else:
         v = zeros(n, dtype)
         alpha = 0
@@ -249,7 +247,6 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         myvar = matvec(A, v)
         myvar = np.squeeze(np.asarray(myvar))
         if diag is not None:
-            #u += np.hstack((myvar, diag * x))
             rmo = matvec(A, np.ravel(v) * dis)
             y = np.hstack((rmo, diag * v))
             u += y
@@ -261,9 +258,7 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             u *= (1 / beta)
             v *= -beta
             #v += A.rmatvec(u)
-            #myvar = rmatvec(A, u)
             if diag is not None:
-                #v += myvar + diag * x2
                 x1 = u[:m]
                 x2 = u[m:]
                 rmo = dis * rmatvec(A, x1)
