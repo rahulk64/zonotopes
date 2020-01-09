@@ -1,7 +1,6 @@
 import numpy as np
 #import tensorflow as tf
 #from scipy.optimize import lsq_linear
-from scipy.sparse import csr_matrix 
 
 
 # NOTE AND REMINDER TO INCLUDE COPYRIGHT NOTICES
@@ -32,29 +31,9 @@ Returns
 eps: point in R^m representing the projection
 """
 
-#@tf.function
-def projZonotope(A_arg, b, n, m):
-    #un-ravel
-    #A = tf.reshape(A_arg, (n,m))
-    #A = A_arg
-    ones = np.squeeze(np.asarray(np.ones(A.shape[1], )))
-    neg_ones = -1 * ones
-    A_coo = csr_matrix(A)
-    #x_lsq = np.linalg.lstsq(A, b, rcond=-1)[0]
-    x_lsq = lsmr(A, b, atol=1e-10, btol=1e-10)[0]
-    eps = trf_linear(A_coo, b, x_lsq, neg_ones, ones, 1e-13, 'lsmr', None, 200, 2)
-    #eps = bvls(A_coo, b, x_lsq, neg_ones, ones, 1e-13, 200, 2)
-
-    #NOTE THIS WORKS
-    #eps = lsq_linear(A_coo, b, bounds=(neg_ones, ones), lsq_solver='lsmr', lsmr_tol=1e-13, verbose=0).x
-    #eps = lsq_linear(A, b, bounds=(neg_ones, ones), lsq_solver='exact', lsmr_tol=1e-13, verbose=0).x
-    #eps = tf.py_function(calcLSQ, [A, b], (tf.float64,tf.float64))
-    return eps
-
 from numpy import zeros, infty, atleast_1d, result_type
 from numpy.linalg import norm
 from math import sqrt
-from scipy.sparse.linalg.interface import aslinearoperator
 
 def _sym_ortho(a, b):
     """
@@ -87,48 +66,100 @@ def _sym_ortho(a, b):
         r = a / c
     return c, s, r
 
-def lsmr(A, b, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
+def matmat(A, X):
+    X = np.asanyarray(X)
+    if X.ndim != 2:
+        raise ValueError('expected 2-d ndarray or matrix, not %d-d'
+                              % X.ndim)
+
+    if X.shape[0] != A.shape[1]:
+        raise ValueError('dimension mismatch: %r, %r'
+                      % (A.shape, X.shape))
+
+    #Y = self._matmat(X)
+    Y = A.dot(X)
+
+    #if isinstance(Y, np.matrix):
+    #    Y = asmatrix(Y)
+
+    return Y
+
+def matvec(A, x):
+    M,N = A.shape
+
+    x = np.asanyarray(x)
+
+    if x.shape != (N,) and x.shape != (N,1):
+        raise ValueError('dimension mismatch: %r, %r'
+                      % (A.shape, x.shape))
+
+    #y = self._matvec(x)
+    #y = A.matmat(x.reshape(-1, 1))
+    y = matmat(A, x.reshape(-1, 1))
+
+    if isinstance(x, np.matrix):
+        y = asmatrix(y)
+    else:
+        y = np.asarray(y)
+
+    if x.ndim == 1:
+        y = y.reshape(M)
+    elif x.ndim == 2:
+        y = y.reshape(M,1)
+    else:
+        raise ValueError('invalid shape returned by user-defined matvec()')
+    return y
+
+def rmatvec(A, x):
+    m, n = A.shape
+    x1 = x[:m]
+    x2 = x[m:]
+
+    x = np.asanyarray(x)
+
+    M,N = A.shape
+
+    if x.shape != (M,) and x.shape != (M,1):
+        raise ValueError('dimension mismatch: %r, %r'
+                      % (A.shape, x.shape))
+
+    #y = self._rmatvec(x)
+    y = matvec(A.H, x)
+
+    if isinstance(x, np.matrix):
+        y = asmatrix(y)
+    else:
+        y = np.asarray(y)
+
+    if x.ndim == 1:
+        y = y.reshape(N)
+    elif x.ndim == 2:
+        y = y.reshape(N,1)
+    else:
+        raise ValueError('invalid shape returned by user-defined rmatvec()')
+
+    return y
+
+def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
          maxiter=None, show=False, x0=None):
 
-    A = aslinearoperator(A)
+    #A = aslinearoperator(A)
     b = atleast_1d(b)
     if b.ndim > 1:
         b = b.squeeze()
 
-    msg = ('The exact solution is x = 0, or x = x0, if x0 was given  ',
-         'Ax - b is small enough, given atol, btol                  ',
-         'The least-squares solution is good enough, given atol     ',
-         'The estimate of cond(Abar) has exceeded conlim            ',
-         'Ax - b is small enough for this machine                   ',
-         'The least-squares solution is good enough for this machine',
-         'Cond(Abar) seems to be too large for this machine         ',
-         'The iteration limit has been reached                      ')
-
-    hdg1 = '   itn      x(1)       norm r    norm Ar'
-    hdg2 = ' compatible   LS      norm A   cond A'
-    pfreq = 20   # print frequency (for repeating the heading)
-    pcount = 0   # print counter
-
     m, n = A.shape
 
     # stores the num of singular values
-    minDim = min([m, n])
+    if diag is not None:
+        minDim = min([m+n, n])
+    else:
+        minDim = min([m, n])
 
     if maxiter is None:
         maxiter = minDim
 
-    if x0 is None:
-        dtype = result_type(A, b, float)
-    else:
-        dtype = result_type(A, b, x0, float)
-
-    if show:
-        print(' ')
-        print('LSMR            Least-squares solution of  Ax = b\n')
-        print('The matrix A has %8g rows  and %8g cols' % (m, n))
-        print('damp = %20.14e\n' % (damp))
-        print('atol = %8.2e                 conlim = %8.2e\n' % (atol, conlim))
-        print('btol = %8.2e             maxiter = %8g\n' % (btol, maxiter))
+    dtype = result_type(A, b, float)
 
     u = b
     normb = norm(b)
@@ -137,12 +168,28 @@ def lsmr(A, b, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         beta = normb.copy()
     else:
         x = atleast_1d(x0)
-        u = u - A.matvec(x)
+        #u = u - A.matvec(x)
+        y = matvec(A, x)
+
+        if diag is not None:
+            rmo = matvec(A, np.ravel(x) * dis)
+            y = np.hstack((rmo, diag * x))
+            u = u - y
+        else:
+            u = u - y
         beta = norm(u)
 
     if beta > 0:
         u = (1 / beta) * u
-        v = A.rmatvec(u)
+        #v = A.rmatvec(u)
+
+        if diag is not None:
+            x1 = u[:m]
+            x2 = u[m:]
+            rmo = dis * rmatvec(A, x1)
+            v = rmo + diag * x2
+        else:
+            v = rmatvec(A, u)
         alpha = norm(v)
     else:
         v = zeros(n, dtype)
@@ -198,16 +245,6 @@ def lsmr(A, b, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             print(msg[0])
         return x, istop, itn, normr, normar, normA, condA, normx
 
-    if show:
-        print(' ')
-        print(hdg1, hdg2)
-        test1 = 1
-        test2 = alpha / beta
-        str1 = '%6g %12.5e' % (itn, x[0])
-        str2 = ' %10.3e %10.3e' % (normr, normar)
-        str3 = '  %8.1e %8.1e' % (test1, test2)
-        print(''.join([str1, str2, str3]))
-
     # Main iteration loop.
     while itn < maxiter:
         itn = itn + 1
@@ -218,13 +255,30 @@ def lsmr(A, b, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         #        alpha*v  =  A'*u  -  beta*v.
 
         u *= -alpha
-        u += A.matvec(v)
+        #u += A.matvec(v)
+        myvar = matvec(A, v)
+        myvar = np.squeeze(np.asarray(myvar))
+        if diag is not None:
+            rmo = matvec(A, np.ravel(v) * dis)
+            y = np.hstack((rmo, diag * v))
+            u += y
+        else:
+            u += myvar
         beta = norm(u)
 
         if beta > 0:
             u *= (1 / beta)
             v *= -beta
-            v += A.rmatvec(u)
+            #v += A.rmatvec(u)
+            if diag is not None:
+                x1 = u[:m]
+                x2 = u[m:]
+                rmo = dis * rmatvec(A, x1)
+                y = rmo + diag * x2
+                v += y
+            else:
+                v += rmatvec(A, u)
+
             alpha = norm(v)
             if alpha > 0:
                 v *= (1 / alpha)
@@ -362,19 +416,6 @@ def lsmr(A, b, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         if istop > 0:
             break
 
-    # Print the stopping condition.
-
-    if show:
-        print(' ')
-        print('LSMR finished')
-        print(msg[istop])
-        print('istop =%8g    normr =%8.1e' % (istop, normr))
-        print('    normA =%8.1e    normAr =%8.1e' % (normA, normar))
-        print('itn   =%8g    condA =%8.1e' % (itn, condA))
-        print('    normx =%8.1e' % (normx))
-        print(str1, str2)
-        print(str3, str4)
-
     return x, istop, itn, normr, normar, normA, condA, normx
 
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
@@ -421,10 +462,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         g_norm = norm(g_scaled, ord=np.inf)
         if g_norm < tol:
             termination_status = 1
-
-        if verbose == 2:
-            print_iteration_linear(iteration, cost, cost_change,
-                                   step_norm, g_norm)
 
         if termination_status is not None:
             break

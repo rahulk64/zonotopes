@@ -20,9 +20,6 @@ import numpy as np
 from numpy import zeros, infty, atleast_1d, result_type
 from numpy.linalg import norm
 from math import sqrt
-#from scipy.sparse.linalg.interface import aslinearoperator
-
-from linop import aslinearoperator
 
 def _sym_ortho(a, b):
     """
