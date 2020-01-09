@@ -9,7 +9,7 @@ from common import (
     EPS, step_size_to_bound, find_active_constraints, in_bounds,
     make_strictly_feasible, build_quadratic_1d, evaluate_quadratic,
     minimize_quadratic_1d, CL_scaling_vector, reflective_transformation,
-    print_header_linear, print_iteration_linear, compute_grad)
+    compute_grad)
 
 
 @tf.function
