@@ -76,7 +76,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
         theta = 1 - min(0.005, g_norm)
 
-        step = select_step(x, A, g_h, diag_h, p, p_h, d, lb, ub, theta)
+        step = select_step(x, A, g_h, diag_h, p, p_h, d, lb, ub, theta, dis=d)
         print("step", step)
         cost_change = -evaluate_quadratic(A, g, step)
 
@@ -126,7 +126,7 @@ def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
     return x, step, cost_change
 
 
-def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta):
+def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
     """Select the best step according to Trust Region Reflective algorithm."""
     if in_bounds(x + p, lb, ub):
         return p
@@ -149,7 +149,8 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta):
     r_stride_u *= theta
 
     if r_stride_u > 0:
-        a, b, c = build_quadratic_1d(A_h, g_h, r_h, s0=p_h, diag=c_h)
+        a, b, c = build_quadratic_1d(A_h, g_h, r_h, s0=p_h, diag=c_h, d=dis)
+        print("abc", a, b, c)
         r_stride, r_value = minimize_quadratic_1d(
             a, b, r_stride_l, r_stride_u, c=c)
         r_h = p_h + r_h * r_stride
@@ -160,13 +161,15 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta):
     # Now correct p_h to make it strictly interior.
     p_h *= theta
     p *= theta
-    p_value = evaluate_quadratic(A_h, g_h, p_h, diag=c_h)
+    p_value = evaluate_quadratic(A_h, g_h, p_h, diag=c_h, d=dis)
+    print("p_value", p_value)
 
     ag_h = -g_h
     ag = d * ag_h
     ag_stride_u, _ = step_size_to_bound(x, ag, lb, ub)
     ag_stride_u *= theta
-    a, b = build_quadratic_1d(A_h, g_h, ag_h, diag=c_h)
+    a, b = build_quadratic_1d(A_h, g_h, ag_h, diag=c_h, d=dis)
+    print("ab", a, b)
     ag_stride, ag_value = minimize_quadratic_1d(a, b, 0, ag_stride_u)
     ag *= ag_stride
 

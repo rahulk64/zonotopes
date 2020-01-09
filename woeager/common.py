@@ -13,20 +13,21 @@ EPS = np.finfo(float).eps
 
 # Functions related to a trust-region problem.
 
-def JDot(J, x):
+def JDot(J, x, d):
     x = np.asarray(x)
 
     if x.ndim == 1 or x.ndim == 2 and x.shape[1] == 1:
-        return matvec(J, x)
+        return matvec(J, np.ravel(x) * d)
     elif x.ndim == 2:
+        print("oh no this is bad")
         return J.matmat(x)
     else:
         raise ValueError('expected 1-d or 2-d array or matrix, got %r'
                         % x)
 
-def build_quadratic_1d(J, g, s, diag=None, s0=None):
+def build_quadratic_1d(J, g, s, diag=None, s0=None, d=None):
     #v = J.dot(s)
-    v = JDot(J, s)
+    v = JDot(J, s, d)
     a = np.dot(v, v)
     if diag is not None:
         a += np.dot(s * diag, s)
@@ -36,7 +37,7 @@ def build_quadratic_1d(J, g, s, diag=None, s0=None):
 
     if s0 is not None:
         #u = J.dot(s0)
-        u = JDot(J, s0)
+        u = JDot(J, s0, d)
         b += np.dot(u, v)
         c = 0.5 * np.dot(u, u) + np.dot(g, s0)
         if diag is not None:
@@ -59,16 +60,22 @@ def minimize_quadratic_1d(a, b, lb, ub, c=0):
     return t[min_index], y[min_index]
 
 
-def evaluate_quadratic(J, g, s, diag=None):
+def evaluate_quadratic(J, g, s, diag=None, d=None):
     if s.ndim == 1:
         #Js = J.dot(s)
-        Js = JDot(J, s)
+        if d is not None:
+            Js = JDot(J, s, d)
+        else:
+            Js = J.dot(s)
         q = np.vdot(Js, Js)
         if diag is not None:
             q += np.dot(s * diag, s)
     else:
         #Js = J.dot(s.T)
-        Js = JDot(J, s.T)
+        if d is not None:
+            Js = JDot(J, s.T, d)
+        else:
+            Js = J.dot(s.T)
         q = np.sum(Js**2, axis=0)
         if diag is not None:
             q += np.sum(diag * s**2, axis=1)
