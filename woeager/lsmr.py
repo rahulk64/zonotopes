@@ -21,7 +21,7 @@ from numpy import zeros, infty, atleast_1d, result_type
 from numpy.linalg import norm
 from math import sqrt
 
-from linop import aslinearoperator
+#from linop import aslinearoperator
 
 def _sym_ortho(a, b):
     """
@@ -126,10 +126,9 @@ def rmatvec(A, x):
     else:
         raise ValueError('invalid shape returned by user-defined rmatvec()')
 
-    print("rmo:", y)
     return y
 
-def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
+def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
          maxiter=None, show=False, x0=None):
 
     #A = aslinearoperator(A)
@@ -159,14 +158,12 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         y = matvec(A, x)
         
         if diag is not None:
-            rmo = matvec(A, np.ravel(x) * d)
+            rmo = matvec(A, np.ravel(x) * dis)
             y = np.hstack((rmo, diag * x))
             u = u - y
         else:
             u = u - y
         beta = norm(u)
-
-    print("u:", u)
 
     if beta > 0:
         u = (1 / beta) * u
@@ -175,13 +172,12 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         if diag is not None:
             x1 = u[:m]
             x2 = u[m:]
-            rmo = d * rmatvec(A, x1)
+            rmo = dis * rmatvec(A, x1)
             v = rmo + diag * x2
             #v = y + diag * x2
         else:
             v = rmatvec(A, u)
         alpha = norm(v)
-        print("alpha", alpha)
         #v = v.T
     else:
         v = zeros(n, dtype)
@@ -252,8 +248,9 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         myvar = np.squeeze(np.asarray(myvar))
         if diag is not None:
             #u += np.hstack((myvar, diag * x))
-            rmo = matvec(A, np.ravel(v) * d)
+            rmo = matvec(A, np.ravel(v) * dis)
             y = np.hstack((rmo, diag * v))
+            print("y:", y)
             u += y
         else:
             u += myvar
@@ -268,7 +265,7 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
                 #v += myvar + diag * x2
                 x1 = u[:m]
                 x2 = u[m:]
-                rmo = d * rmatvec(A, x1)
+                rmo = dis * rmatvec(A, x1)
                 y = rmo + diag * x2
                 v += y
             else:
@@ -277,6 +274,9 @@ def lsmr(A, b, d=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             alpha = norm(v)
             if alpha > 0:
                 v *= (1 / alpha)
+
+        print("u:", u)
+        print("v:", v)
 
         # At this point, beta = beta_{k+1}, alpha = alpha_{k+1}.
 
