@@ -97,7 +97,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
             termination_status = 2
 
         cost = 0.5 * np.dot(r, r.T)
-        print("x:", x)
 
     if termination_status is None:
         termination_status = 0

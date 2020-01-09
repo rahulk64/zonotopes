@@ -139,7 +139,11 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
     m, n = A.shape
 
     # stores the num of singular values
-    minDim = min([m, n])
+    if diag is not None:
+        minDim = min([m+n, n]) 
+    else:
+        minDim = min([m, n])
+    print("minDim", minDim)
 
     if maxiter is None:
         maxiter = minDim
@@ -152,7 +156,6 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         x = zeros(n, dtype)
         beta = normb.copy()
     else:
-        print("this should not run")
         x = atleast_1d(x0)
         #u = u - A.matvec(x)
         y = matvec(A, x)
@@ -250,11 +253,11 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             #u += np.hstack((myvar, diag * x))
             rmo = matvec(A, np.ravel(v) * dis)
             y = np.hstack((rmo, diag * v))
-            print("y:", y)
             u += y
         else:
             u += myvar
         beta = norm(u)
+        print("beta", beta)
 
         if beta > 0:
             u *= (1 / beta)
@@ -275,8 +278,7 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
             if alpha > 0:
                 v *= (1 / alpha)
 
-        print("u:", u)
-        print("v:", v)
+        print("alpha", alpha)
 
         # At this point, beta = beta_{k+1}, alpha = alpha_{k+1}.
 
