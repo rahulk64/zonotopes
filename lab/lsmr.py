@@ -165,6 +165,7 @@ def rmatvec(A, x):
 
     return y
 
+@tf.function
 def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
          maxiter=None, show=False, x0=None):
 
@@ -183,6 +184,8 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
 
     if maxiter is None:
         maxiter = minDim
+
+    maxiter = tf.Variable(maxiter)
 
     #dtype = result_type(A, b, float)
     dtype = tf.float64
@@ -229,13 +232,15 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
 
     # Initialize variables for 1st iteration.
 
-    itn = 0
+    itn = tf.Variable(0)
     zetabar = alpha * beta
     alphabar = alpha
-    rho = 1
-    rhobar = 1
-    cbar = 1
-    sbar = 0
+    rho = tf.Variable(1, dtype=tf.float64)
+    rhobar = tf.Variable(1, dtype=tf.float64)
+    cbar = tf.Variable(1, dtype=tf.float64)
+    sbar = tf.Variable(0, dtype=tf.float64)
+    #cbar = tf.Variable(1, dtype=tf.float64)
+    #sbar = tf.Variable(0, dtype=tf.float64)
 
     #h = v.copy()
     h = tf.identity(v)
@@ -244,22 +249,22 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
     # Initialize variables for estimation of ||r||.
 
     betadd = beta
-    betad = 0
-    rhodold = 1
-    tautildeold = 0
-    thetatilde = 0
-    zeta = 0
-    d = 0
+    betad = tf.Variable(0, dtype=tf.float64)
+    rhodold = tf.Variable(1, dtype=tf.float64)
+    tautildeold = tf.Variable(0, dtype=tf.float64)
+    thetatilde = tf.Variable(0, dtype=tf.float64)
+    zeta = tf.Variable(0, dtype=tf.float64)
+    d = tf.Variable(0, dtype=tf.float64)
 
     # Initialize variables for estimation of ||A|| and cond(A)
 
     normA2 = alpha * alpha
-    maxrbar = 0
-    minrbar = 1e+100
+    maxrbar = tf.Variable(0, dtype=tf.float64)
+    minrbar = tf.Variable(1e+100, dtype=tf.float64)
     #normA = sqrt(normA2)
     normA = tf.math.sqrt(normA2)
-    condA = 1
-    normx = 0
+    condA = tf.Variable(1, dtype=tf.float64)
+    normx = tf.Variable(0, dtype=tf.float64)
 
     # Items for use in stopping rules, normb set earlier
     istop = 0
@@ -278,6 +283,8 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
 
     # Main iteration loop.
     while itn < maxiter:
+        print("itn", itn)
+        print("maxiter", maxiter)
         itn = itn + 1
 
         # Perform the next step of the bidiagonalization to obtain the
@@ -333,9 +340,9 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
 
         rhobarold = rhobar
         zetaold = zeta
-        thetabar = sbar * rho
-        rhotemp = cbar * rho
-        cbar, sbar, rhobar = _sym_ortho(cbar * rho, thetanew)
+        thetabar = tf.dtypes.cast(sbar, tf.float64) * rho
+        rhotemp = tf.dtypes.cast(cbar, tf.float64) * rho
+        cbar, sbar, rhobar = _sym_ortho(tf.dtypes.cast(cbar, tf.float64) * rho, thetanew)
         zeta = cbar * zetabar
         zetabar = - sbar * zetabar
 
@@ -380,16 +387,17 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         normA2 = normA2 + alpha * alpha
 
         # Estimate cond(A).
-        maxrbar = max(maxrbar, rhobarold)
+        maxrbar = tf.math.maximum(maxrbar, rhobarold)
         if itn > 1:
-            minrbar = min(minrbar, rhobarold)
-        condA = max(maxrbar, rhotemp) / min(minrbar, rhotemp)
+            minrbar = tf.math.minimum(minrbar, rhobarold)
+        #condA = max(maxrbar, rhotemp) / min(minrbar, rhotemp)
+        condA = tf.math.maximum(tf.dtypes.cast(maxrbar, tf.float64), rhotemp) / tf.math.minimum(tf.dtypes.cast(minrbar, tf.float64), rhotemp)
 
         # Test for convergence.
 
         # Compute norms for convergence testing.
         normar = abs(zetabar)
-        normx = norm(x)
+        normx = tf.norm(x, ord='euclidean')
 
         # Now use these norms to estimate certain other quantities,
         # some of which will be small near a solution.
@@ -398,7 +406,7 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         if (normA * normr) != 0:
             test2 = normar / (normA * normr)
         else:
-            test2 = infty
+            test2 = tf.dtypes.cast(infty, tf.float64)
         test3 = 1 / condA
         t1 = test1 / (1 + normA * normx / normb)
         rtol = btol + atol * normA * normx / normb
@@ -429,6 +437,10 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
 
         if istop > 0:
             break
+
+
+        print("itn", itn)
+        print("maxiter", maxiter)
 
     return x, istop, itn, normr, normar, normA, condA, normx
 
