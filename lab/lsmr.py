@@ -49,18 +49,31 @@ def _sym_ortho(a, b):
            and Least-Squares Problems", Dissertation,
            http://www.stanford.edu/group/SOL/dissertations/sou-cheng-choi-thesis.pdf
     """
+    r = 0
+    s = 0
+    c = 0
     if b == 0:
-        return np.sign(a), 0, abs(a)
+        #return np.sign(a), 0, abs(a)
+        c = tf.dtypes.cast(tf.math.sign(a), tf.float64)
+        s = tf.Variable(0, dtype=tf.float64)
+        r = tf.dtypes.cast(abs(a), tf.float64)
+        #return tf.math.sign(a), 0, abs(a) 
     elif a == 0:
-        return 0, np.sign(b), abs(b)
+        #return 0, np.sign(b), abs(b)
+        c = tf.Variable(0, dtype=tf.float64)
+        s = tf.math.sign(b)
+        r = abs(b)
+        #return 0, tf.math.sign(b), abs(b) 
     elif abs(b) > abs(a):
         tau = a / b
-        s = np.sign(b) / sqrt(1 + tau * tau)
+        #s = np.sign(b) / sqrt(1 + tau * tau)
+        s = tf.math.sign(b) / tf.sqrt(1 + tau * tau)
         c = s * tau
         r = b / s
     else:
         tau = b / a
-        c = np.sign(a) / sqrt(1+tau*tau)
+        #c = np.sign(a) / sqrt(1+tau*tau)
+        c = tf.dtypes.cast(tf.math.sign(a), tf.float64) / tf.sqrt(1+tau*tau)
         s = c * tau
         r = a / c
     return c, s, r
@@ -73,9 +86,9 @@ def matmat(A, X):
         tf.print("x rank:", tf.rank(X), output_stream=sys.stdout)
         #raise ValueError('expected 2-d ndarray or matrix, not', tf.rank(X))
 
-    if X.shape[0] != A.shape[1]:
-        raise ValueError('dimension mismatch: %r, %r'
-                      % (A.shape, X.shape))
+    #if X.shape[0] != A.shape[1]:
+    #    raise ValueError('dimension mismatch: %r, %r'
+    #                  % (A.shape, X.shape))
 
     #Y = self._matmat(X)
     #Y = A.dot(X)
@@ -98,7 +111,8 @@ def matvec(A, x):
     #y = self._matvec(x)
     #y = A.matmat(x.reshape(-1, 1))
     #y = matmat(A, x.reshape(-1, 1))
-    y = matmat(A, tf.reshape(x, (-1, 1)))
+    print("xb4:", x.shape)
+    y = matmat(A, tf.reshape(x, [-1, 1]))
 
     #if isinstance(x, np.matrix):
     #    y = asmatrix(y)
@@ -126,9 +140,9 @@ def rmatvec(A, x):
 
     M,N = A.shape
 
-    if x.shape != (M,) and x.shape != (M,1):
-        raise ValueError('dimension mismatch: %r, %r'
-                      % (A.shape, x.shape))
+    #if x.shape != (M,) and x.shape != (M,1):
+    #    raise ValueError('dimension mismatch: %r, %r'
+    #                  % (A.shape, x.shape))
 
     #y = self._rmatvec(x)
     #y = matvec(A.H, x)
@@ -274,10 +288,12 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         u *= -alpha
         #u += A.matvec(v)
         myvar = matvec(A, v)
-        myvar = np.squeeze(np.asarray(myvar))
+        #myvar = np.squeeze(np.asarray(myvar))
         if diag is not None:
-            rmo = matvec(A, np.ravel(v) * dis)
-            y = np.hstack((rmo, diag * v))
+            #rmo = matvec(A, np.ravel(v) * dis)
+            rmo = matvec(A, tf.reshape(v, [-1]) * dis)
+            #y = np.hstack((rmo, diag * v))
+            y = tf.concat([rmo, diag * v], axis=1)
             u += y
         else:
             u += myvar
@@ -356,11 +372,11 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
         tautildeold = (zetaold - thetatildeold * tautildeold) / rhotildeold
         taud = (zeta - thetatilde * tautildeold) / rhodold
         d = d + betacheck * betacheck
-        normr = sqrt(d + (betad - taud)**2 + betadd * betadd)
+        normr = tf.math.sqrt(d + (betad - taud)**2 + betadd * betadd)
 
         # Estimate ||A||.
         normA2 = normA2 + beta * beta
-        normA = sqrt(normA2)
+        normA = tf.math.sqrt(normA2)
         normA2 = normA2 + alpha * alpha
 
         # Estimate cond(A).
