@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from numpy.linalg import norm
 
-from lsmr import lsmr 
+#from lsmr import lsmr 
 
 from common import (
     EPS, step_size_to_bound, find_active_constraints, in_bounds,
@@ -15,13 +15,16 @@ from common import (
 @tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                verbose):
+    print("x_lsq", x_lsq.shape)
     lb = tf.reshape(lb, tf.shape(x_lsq))
     ub = tf.reshape(ub, tf.shape(x_lsq))
 
     tol = tf.constant(tol, dtype=tf.float64)
     m, n = A.shape
     x, _ = reflective_transformation(x_lsq, lb, ub)
+    print("x_ref", x.shape)
     x = make_strictly_feasible(x, lb, ub, rstep=0.1)
+    print("x_str", x.shape)
 
     if lsq_solver == 'exact':
         QT, R, perm = qr(A, mode='economic', pivoting=True)
@@ -71,8 +74,9 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
         #diag_h = np.diag(g.T * dv)
         diag_h = tf.linalg.diag_part(tf.transpose(g) * dv)
-        diag_root_h = diag_h ** 0.5
+        diag_root_h = tf.Variable(diag_h ** 0.5, dtype=tf.float64)
         d = v ** 0.5
+        print("v.shape", v.shape)
         #g_h = d * np.squeeze(np.asarray(g.T))
         g_h = d * g
 
@@ -86,7 +90,18 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
             eta = 1e-2 * min(0.5, g_norm)
             lsmr_tol = max(EPS, min(0.1, eta * g_norm))
         #p_h = -lsmr(lsmr_op, r_aug, atol=lsmr_tol, btol=lsmr_tol)[0]
-        p_h = -lsmr(A, r_aug, dis=d, diag=diag_root_h, atol=lsmr_tol, btol=lsmr_tol)[0]
+        #p_h = -lsmr(A, r_aug, dis=d, diag=diag_root_h, atol=lsmr_tol, btol=lsmr_tol)[0]
+
+        #A_h = A * np.diag(d)
+        temp = tf.reshape(tf.linalg.diag(d), [tf.shape(d)[0]])
+        A_h = tf.Variable(A * temp, dtype=tf.float64)
+        print("d.shape", d.shape)
+        print("diag.shape", tf.linalg.diag(d).shape)
+        print("A_h shape", A_h.shape)
+        #lsmr_op = np.vstack(A_h, np.diag(diag_root_h))
+        print("diag_root_h.shape", diag_root_h.shape)
+        lsmr_op = tf.stack((A_h, tf.linalg.diag(diag_root_h)))
+        p_h = tf.linalg.lstsq(lsmr_op, r_aug)
 
         p = d * p_h
 
