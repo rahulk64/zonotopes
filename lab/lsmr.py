@@ -81,7 +81,7 @@ def _sym_ortho(a, b):
 def matmat(A, X):
     #X = np.asanyarray(X)
     if tf.rank(X) != 2:
-        print("X shape", X.shape)
+        print("X shape is not correct", X.shape)
         tf.print("x:", X, output_stream=sys.stdout)
         tf.print("x rank:", tf.rank(X), output_stream=sys.stdout)
         #raise ValueError('expected 2-d ndarray or matrix, not', tf.rank(X))
@@ -97,6 +97,7 @@ def matmat(A, X):
     #if isinstance(Y, np.matrix):
     #    Y = asmatrix(Y)
 
+    print("returning matmat")
     return Y
 
 def matvec(A, x):
@@ -121,17 +122,20 @@ def matvec(A, x):
     #else:
     #    y = np.asarray(y)
 
-    if tf.rank(x) == 1:
-        #y = y.reshape(M)
-        y = tf.reshape(y, (M,))
-    elif tf.rank(x) == 2:
-        #y = y.reshape(M,1)
-        y = tf.reshape(y, (M,1))
-    else:
-        #raise ValueError('invalid shape returned by user-defined matvec()')
-        print('invalid shape returned by user-defined matvec()')
+    #if tf.rank(x) == 1:
+    #    #y = y.reshape(M)
+    #    y = tf.reshape(y, (M,))
+    #elif tf.rank(x) == 2:
+    #    #y = y.reshape(M,1)
+    #    y = tf.reshape(y, (M,1))
+    #else:
+    #    #raise ValueError('invalid shape returned by user-defined matvec()')
+    #    #print('invalid shape returned by user-defined matvec()')
+    #    print("shape:", y.shape)
+    yt = tf.reshape(y, (M,))
+    print("returned shape")
 
-    return y
+    return yt
 
 def rmatvec(A, x):
     m, n = A.shape

@@ -21,6 +21,11 @@ def JDot(J, x, d):
     d = tf.reshape(d, [d.shape[0]])
     print("d.shape", d.shape)
     print("times d", (tf.reshape(x, [-1]) * d).shape)
+    print("J.shape", J.shape)
+    temp = tf.reshape(x, [-1]) * d
+    print("temp.shape", temp.shape)
+    val = matvec(J, temp)
+    print("val.shape", val.shape)
     return matvec(J, tf.reshape(x, [-1]) * d)
 
 def build_quadratic_1d(J, g, s, diag=None, s0=None, d=None):
@@ -95,13 +100,18 @@ def minimize_quadratic_1d(a, b, lb, ub, c=0):
 
 
 def evaluate_quadratic(J, g, s, diag=None, d=None):
-    if s.ndim == 1:
+    print("s", s.shape)
+    print("s rank", tf.rank(s))
+    if tf.rank(s) == 1:
         #Js = J.dot(s)
+        print("here")
         if d is not None:
             Js = JDot(J, s, d)
         else:
             Js = J.dot(s)
-        q = np.vdot(Js, Js)
+        print("after")
+        #q = np.vdot(Js, Js)
+        q = tf.tensordot(Js, Js, 1)
         if diag is not None:
             q += np.dot(s * diag, s)
     else:
