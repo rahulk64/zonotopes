@@ -57,15 +57,41 @@ def build_quadratic_1d(J, g, s, diag=None, s0=None, d=None):
 
 
 def minimize_quadratic_1d(a, b, lb, ub, c=0):
-    t = [lb, ub]
+    #t = [lb, ub]
+    ly = lb * (a * lb + b) + c
+    uy = ub * (a * ub + b) + c
     if a != 0:
         extremum = -0.5 * b / a
-        if lb < extremum < ub:
-            t.append(extremum)
-    t = np.asarray(t)
-    y = t * (a * t + b) + c
-    min_index = np.argmin(y)
-    return t[min_index], y[min_index]
+        first = lb < extremum
+        second = extremum < ub
+        if first and second:
+            #t = [lb, ub, extremum]
+            #t.append(extremum)
+            mid = extremum * (a * extremum + b) + c
+            #t = [lb, ub, extremum]
+            #yret = [ly, uy, mid]
+            #min_index = tf.math.argmin(yret)
+            #return t[min_index], yret[min_index]
+            if ly < uy and ly < mid:
+                return lb, ly
+            elif uy < ly and uy < mid:
+                return ub, uy
+            else:
+                return extremum, mid
+        else:
+            if ly < uy:
+                return lb, ly
+            else:
+                return ub, uy
+    else:
+        if ly < uy:
+            return lb, ly
+        else:
+            return ub, uy
+    #t = np.asarray(t)
+    #yret = t * (a * t + b) + c
+    #min_index = np.argmin(yret)
+    #return t[min_index], yret[min_index]
 
 
 def evaluate_quadratic(J, g, s, diag=None, d=None):
