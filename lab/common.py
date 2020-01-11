@@ -17,26 +17,40 @@ def JDot(J, x, d):
     #x = np.asarray(x)
 
     #return matvec(J, np.ravel(x) * d)
+    print("reshape", tf.reshape(x, [-1]).shape)
+    d = tf.reshape(d, [d.shape[0]])
+    print("d.shape", d.shape)
+    print("times d", (tf.reshape(x, [-1]) * d).shape)
     return matvec(J, tf.reshape(x, [-1]) * d)
 
 def build_quadratic_1d(J, g, s, diag=None, s0=None, d=None):
     #v = J.dot(s)
     v = JDot(J, s, d)
-    a = np.dot(v, v)
+    #a = np.dot(v, v)
+    a = tf.tensordot(v, v, 1)
     if diag is not None:
-        a += np.dot(s * diag, s)
+        #a += np.dot(s * diag, s)
+        a += tf.tensordot(s * diag, s, 1)
     a *= 0.5
 
-    b = np.dot(g, s)
+    #b = np.dot(g, s)
+    b = tf.tensordot(g, s, 1)
 
     if s0 is not None:
         #u = J.dot(s0)
+        print("J.shape", J.shape)
+        print("d.shape", d.shape)
+        print("s0.shape", s0.shape)
         u = JDot(J, s0, d)
-        b += np.dot(u, v)
-        c = 0.5 * np.dot(u, u) + np.dot(g, s0)
+        #b += np.dot(u, v)
+        b += tf.tensordot(u, v, 1)
+        #c = 0.5 * np.dot(u, u) + np.dot(g, s0)
+        c = 0.5 * tf.tensordot(u, u, 1) + tf.tensordot(g, s0, 1)
         if diag is not None:
-            b += np.dot(s0 * diag, s)
-            c += 0.5 * np.dot(s0 * diag, s0)
+            #b += np.dot(s0 * diag, s)
+            b += tf.tensordot(s0 * diag, s, 1)
+            #c += 0.5 * np.dot(s0 * diag, s0)
+            c += 0.5 * tf.tensordot(s0 * diag, s0, 1)
         return a, b, c
     else:
         return a, b

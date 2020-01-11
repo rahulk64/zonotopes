@@ -112,6 +112,8 @@ def matvec(A, x):
     #y = A.matmat(x.reshape(-1, 1))
     #y = matmat(A, x.reshape(-1, 1))
     print("xb4:", x.shape)
+    print("A.shape", A.shape)
+    print("x.shape", tf.reshape(x, [-1,1]).shape)
     y = matmat(A, tf.reshape(x, [-1, 1]))
 
     #if isinstance(x, np.matrix):
