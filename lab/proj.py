@@ -43,6 +43,9 @@ def projZonotope(A, b, n, m):
     b = tf.cast(b, tf.float64)
     b = tf.reshape(b, (tf.size(b), 1))
 
+    print("A.shape", A.shape)
+    print("b.shape", b.shape)
+
     x_lsq = tf.linalg.lstsq(A, b)
     #temp = tf.reshape(tf.linalg.diag(x_lsq), [tf.shape(x_lsq)[0]])
     #tf.print("x_lsq", x_lsq, output_stream=sys.stdout)

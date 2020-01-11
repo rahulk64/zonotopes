@@ -100,7 +100,9 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         print("A_h shape", A_h.shape)
         #lsmr_op = np.vstack(A_h, np.diag(diag_root_h))
         print("diag_root_h.shape", diag_root_h.shape)
-        lsmr_op = tf.stack((A_h, tf.linalg.diag(diag_root_h)))
+        lsmr_op = tf.concat([A_h, tf.linalg.diag(diag_root_h)], axis=0)
+        print("lsmr_op.shape", lsmr_op.shape)
+        r_aug = tf.reshape(r_aug, (tf.size(r_aug), 1))
         p_h = tf.linalg.lstsq(lsmr_op, r_aug)
 
         p = d * p_h
