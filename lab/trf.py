@@ -47,7 +47,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     #g = compute_grad(A, tf.transpose(r))
     g = compute_grad(A, r) 
     #cost = 0.5 * np.dot(r, r.T)
-    cost = 0.5 * tf.tensordot(r, tf.transpose(r), 1)
+    cost = 0.5 * tf.tensordot(r, r, 1)
     initial_cost = cost
 
     termination_status = 0 
@@ -57,7 +57,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     if max_iter is None:
         max_iter = 100
 
-    for iteration in range(max_iter):
+    for iteration in tf.range(max_iter):
         print("iteration")
         v, dv = CL_scaling_vector(x, g, lb, ub)
         g_scaled = tf.transpose(g) * v 
@@ -121,14 +121,17 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         else:
             x = make_strictly_feasible(x + step, lb, ub, rstep=0)
 
-        step_norm = norm(step)
-        r = A.dot(x) - b
-        g = compute_grad(A, r.T).T
+        step_norm = tf.norm(step)
+        #r = A.dot(x) - b
+        r = tf.tensordot(A, x, 1) - b
+        #g = compute_grad(A, r.T).T
+        g = compute_grad(A, tf.transpose(r))
 
         if cost_change < tol * cost:
             termination_status = 2
 
-        cost = 0.5 * np.dot(r, r.T)
+        #cost = 0.5 * np.dot(r, r.T)
+        cost = 0.5 * tf.tensordot(r, r, 1)
 
     active_mask = find_active_constraints(x, lb, ub, rtol=tol)
 
