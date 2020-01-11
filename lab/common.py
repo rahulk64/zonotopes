@@ -14,16 +14,10 @@ EPS = np.finfo(float).eps
 
 # Functions related to a trust-region problem.
 def JDot(J, x, d):
-    x = np.asarray(x)
+    #x = np.asarray(x)
 
-    if x.ndim == 1 or x.ndim == 2 and x.shape[1] == 1:
-        return matvec(J, np.ravel(x) * d)
-    elif x.ndim == 2:
-        print("oh no this is bad")
-        return J.matmat(x)
-    else:
-        raise ValueError('expected 1-d or 2-d array or matrix, got %r'
-                        % x)
+    #return matvec(J, np.ravel(x) * d)
+    return matvec(J, tf.reshape(x, [-1]) * d)
 
 def build_quadratic_1d(J, g, s, diag=None, s0=None, d=None):
     #v = J.dot(s)

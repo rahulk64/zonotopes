@@ -164,8 +164,11 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
         return p
 
     p_stride, hits = step_size_to_bound(x, p, lb, ub)
-    r_h = np.copy(p_h)
-    r_h[hits.astype(bool)] *= -1
+    #r_h = np.copy(p_h)
+    r_h = tf.identity(p_h)
+    #r_h[hits.astype(bool)] *= -1
+    #r_h[tf.dtypes.cast(hits, tf.bool)] *= -1
+    r_h = tf.where(tf.equal(hits, False), r_h, r_h*-1)
     r = d * r_h
 
     # Restrict step, such that it hits the bound.
