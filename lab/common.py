@@ -17,20 +17,16 @@ def JDot(J, x, d):
     #x = np.asarray(x)
 
     #return matvec(J, np.ravel(x) * d)
-    print("reshape", tf.reshape(x, [-1]).shape)
     d = tf.reshape(d, [d.shape[0]])
-    print("d.shape", d.shape)
-    print("times d", (tf.reshape(x, [-1]) * d).shape)
-    print("J.shape", J.shape)
     temp = tf.reshape(x, [-1]) * d
-    print("temp.shape", temp.shape)
     val = matvec(J, temp)
-    print("val.shape", val.shape)
     return matvec(J, tf.reshape(x, [-1]) * d)
 
 def build_quadratic_1d(J, g, s, diag=None, s0=None, d=None):
     #v = J.dot(s)
     v = JDot(J, s, d)
+    s = tf.reshape(s, [-1])
+    g = tf.reshape(g, [-1])
     #a = np.dot(v, v)
     a = tf.tensordot(v, v, 1)
     if diag is not None:
@@ -42,10 +38,8 @@ def build_quadratic_1d(J, g, s, diag=None, s0=None, d=None):
     b = tf.tensordot(g, s, 1)
 
     if s0 is not None:
+        s0 = tf.reshape(s0, [-1])
         #u = J.dot(s0)
-        print("J.shape", J.shape)
-        print("d.shape", d.shape)
-        print("s0.shape", s0.shape)
         u = JDot(J, s0, d)
         #b += np.dot(u, v)
         b += tf.tensordot(u, v, 1)
@@ -100,17 +94,13 @@ def minimize_quadratic_1d(a, b, lb, ub, c=0):
 
 
 def evaluate_quadratic(J, g, s, diag=None, d=None):
-    print("s", s.shape)
-    print("s rank", tf.rank(s))
     if tf.rank(s) == 1:
         #Js = J.dot(s)
-        print("here")
         if d is not None:
             Js = JDot(J, s, d)
         else:
             #Js = J.dot(s)
             Js = tf.tensordot(J, s, 1)
-        print("after")
         #q = np.vdot(Js, Js)
         q = tf.tensordot(Js, Js, 1)
         if diag is not None:
@@ -236,7 +226,6 @@ def make_strictly_feasible(x, lb, ub, rstep=1e-10):
 
 
 def CL_scaling_vector(x, g, lb, ub):
-    print("xCL", x.shape)
     lb = tf.reshape(lb, tf.shape(x))
     ub = tf.reshape(ub, tf.shape(x))
     #v = np.ones_like(x)
@@ -262,7 +251,6 @@ def CL_scaling_vector(x, g, lb, ub):
     v = tf.where(tf.equal(mask, False), v, x[mask]-lb[mask])
     dv = tf.where(tf.equal(mask, False), dv, 1)
 
-    print("vb4", v.shape)
 
     #v.reshape(x.shape)
     #dv.reshape(x.shape)

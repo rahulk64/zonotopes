@@ -22,9 +22,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     tol = tf.constant(tol, dtype=tf.float64)
     m, n = A.shape
     x, _ = reflective_transformation(x_lsq, lb, ub)
-    print("x_ref", x.shape)
     x = make_strictly_feasible(x, lb, ub, rstep=0.1)
-    print("x_str", x.shape)
 
     if lsq_solver == 'exact':
         QT, R, perm = qr(A, mode='economic', pivoting=True)
@@ -76,7 +74,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         diag_h = tf.linalg.diag_part(tf.transpose(g) * dv)
         diag_root_h = tf.Variable(diag_h ** 0.5, dtype=tf.float64)
         d = v ** 0.5
-        print("v.shape", v.shape)
         #g_h = d * np.squeeze(np.asarray(g.T))
         g_h = d * g
 
@@ -112,11 +109,8 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
         theta = 1 - tf.math.minimum(tf.constant(0.005, dtype=tf.float64), g_norm)
 
-        print("select_step b4")
         step = select_step(x, A, g_h, diag_h, p, p_h, d, lb, ub, theta, dis=d)
-        print("select step after")
         cost_change = -evaluate_quadratic(A, g, step)
-        print("cost change")
 
         # Perhaps almost never executed, the idea is that `p` is descent
         # direction thus we must find acceptable cost decrease using simple
@@ -135,7 +129,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
             termination_status = 2
 
         cost = 0.5 * np.dot(r, r.T)
-        print("end iteration")
 
     active_mask = find_active_constraints(x, lb, ub, rtol=tol)
 
@@ -175,7 +168,6 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
     """Select the best step according to Trust Region Reflective algorithm."""
     if in_bounds(x + p, lb, ub):
         return p
-    print("not in bounds")
 
     p_stride, hits = step_size_to_bound(x, p, lb, ub)
     #r_h = np.copy(p_h)
@@ -206,15 +198,11 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
     else:
         r_value = tf.dtypes.cast(np.inf, tf.float64)
 
-    print("made it here")
-
     # Now correct p_h to make it strictly interior.
     p_h *= theta
     p *= theta
-    print("quadratic b4")
     p_value = evaluate_quadratic(A_h, g_h, p_h, diag=c_h, d=dis)
 
-    print("evaluated a quadratic")
     ag_h = -g_h
     ag = d * ag_h
     ag_stride_u, _ = step_size_to_bound(x, ag, lb, ub)
@@ -222,8 +210,6 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
     a, b = build_quadratic_1d(A_h, g_h, ag_h, diag=c_h, d=dis)
     ag_stride, ag_value = minimize_quadratic_1d(a, b, 0, ag_stride_u)
     ag *= ag_stride
-
-    print("ready to return p value")
 
     if p_value < r_value and p_value < ag_value:
         return p

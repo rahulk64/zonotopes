@@ -82,8 +82,6 @@ def matmat(A, X):
     #X = np.asanyarray(X)
     if tf.rank(X) != 2:
         print("X shape is not correct", X.shape)
-        tf.print("x:", X, output_stream=sys.stdout)
-        tf.print("x rank:", tf.rank(X), output_stream=sys.stdout)
         #raise ValueError('expected 2-d ndarray or matrix, not', tf.rank(X))
 
     #if X.shape[0] != A.shape[1]:
@@ -97,7 +95,6 @@ def matmat(A, X):
     #if isinstance(Y, np.matrix):
     #    Y = asmatrix(Y)
 
-    print("returning matmat")
     return Y
 
 def matvec(A, x):
@@ -112,9 +109,6 @@ def matvec(A, x):
     #y = self._matvec(x)
     #y = A.matmat(x.reshape(-1, 1))
     #y = matmat(A, x.reshape(-1, 1))
-    print("xb4:", x.shape)
-    print("A.shape", A.shape)
-    print("x.shape", tf.reshape(x, [-1,1]).shape)
     y = matmat(A, tf.reshape(x, [-1, 1]))
 
     #if isinstance(x, np.matrix):
@@ -133,7 +127,6 @@ def matvec(A, x):
     #    #print('invalid shape returned by user-defined matvec()')
     #    print("shape:", y.shape)
     yt = tf.reshape(y, (M,))
-    print("returned shape")
 
     return yt
 
@@ -289,8 +282,6 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
 
     # Main iteration loop.
     while itn < maxiter:
-        print("itn", itn)
-        print("maxiter", maxiter)
         itn = itn + 1
 
         # Perform the next step of the bidiagonalization to obtain the
@@ -443,10 +434,6 @@ def lsmr(A, b, dis=None, diag=None, damp=0.0, atol=1e-6, btol=1e-6, conlim=1e8,
 
         if istop > 0:
             break
-
-
-        print("itn", itn)
-        print("maxiter", maxiter)
 
     return x, istop, itn, normr, normar, normA, condA, normx
 
