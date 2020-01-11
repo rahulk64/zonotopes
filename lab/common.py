@@ -170,8 +170,10 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     ub = tf.reshape(ub, tf.shape(x))
 
     if rtol == 0:
-        active[x <= lb] = -1
-        active[x >= ub] = 1
+        #active[x <= lb] = -1
+        active = tf.where(tf.equal(x <= lb, False), active, -1)
+        #active[x >= ub] = 1
+        active = tf.where(tf.equal(x >= ub, False), active, 1)
         return active
 
     lower_dist = x - lb
@@ -211,8 +213,10 @@ def make_strictly_feasible(x, lb, ub, rstep=1e-10):
     upper_mask = tf.equal(active, 1)
 
     if rstep == 0:
-        x_new[lower_mask] = tf.nextafter(lb[lower_mask], ub[lower_mask])
-        x_new[upper_mask] = tf.nextafter(ub[upper_mask], lb[upper_mask])
+        #x_new[lower_mask] = tf.math.nextafter(lb[lower_mask], ub[lower_mask])
+        #x_new[upper_mask] = tf.math.nextafter(ub[upper_mask], lb[upper_mask])
+        x_new = tf.where(tf.equal(lower_mask, False), x_new, tf.math.nextafter(lb[lower_mask], ub[lower_mask]))
+        x_new = tf.where(tf.equal(upper_mask, False), x_new, tf.math.nextafter(ub[upper_mask], lb[upper_mask]))
     else:
         #x_new[lower_mask] = (lb[lower_mask] +
         #                     rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(lb[lower_mask])))
