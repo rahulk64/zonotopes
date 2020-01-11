@@ -78,21 +78,21 @@ def minimize_quadratic_1d(a, b, lb, ub, c=0):
             #min_index = tf.math.argmin(yret)
             #return t[min_index], yret[min_index]
             if ly < uy and ly < mid:
-                return lb, ly
+                return tf.dtypes.cast(lb, tf.float64), ly
             elif uy < ly and uy < mid:
-                return ub, uy
+                return tf.dtypes.cast(ub, tf.float64), uy
             else:
                 return extremum, mid
         else:
             if ly < uy:
-                return lb, ly
+                return tf.dtypes.cast(lb, tf.float64), ly
             else:
-                return ub, uy
+                return tf.dtypes.cast(ub, tf.float64), uy
     else:
         if ly < uy:
-            return lb, ly
+            return tf.dtypes.cast(lb, tf.float64), ly
         else:
-            return ub, uy
+            return tf.dtypes.cast(ub, tf.float64), uy
     #t = np.asarray(t)
     #yret = t * (a * t + b) + c
     #min_index = np.argmin(yret)
@@ -108,7 +108,8 @@ def evaluate_quadratic(J, g, s, diag=None, d=None):
         if d is not None:
             Js = JDot(J, s, d)
         else:
-            Js = J.dot(s)
+            #Js = J.dot(s)
+            Js = tf.tensordot(J, s, 1)
         print("after")
         #q = np.vdot(Js, Js)
         q = tf.tensordot(Js, Js, 1)
@@ -120,7 +121,8 @@ def evaluate_quadratic(J, g, s, diag=None, d=None):
         if d is not None:
             Js = JDot(J, tf.transpose(s), d)
         else:
-            Js = J.dot(s.T)
+            #Js = J.dot(s.T)
+            Js = tf.tensordot(J, tf.transpose(s), 1)
         #q = np.sum(Js**2, axis=0)
         q = tf.reduce_sum(Js**2, axis=0)
         if diag is not None:
@@ -128,7 +130,7 @@ def evaluate_quadratic(J, g, s, diag=None, d=None):
             q += tf.reduce_sum(diag * s ** 2, axis=1)
 
     #l = np.dot(s, g.T)
-    l = tf.tensordot(s, g, 1)
+    l = tf.tensordot(s, tf.transpose(g), 1)
 
     return 0.5 * q + l
 

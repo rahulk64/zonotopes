@@ -143,7 +143,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
 def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
     """Find an appropriate step size using backtracking line search."""
-    alpha = 1
+    alpha = 1.
     while True:
         x_new, _ = reflective_transformation(x + alpha * p, lb, ub)
         step = x_new - x
