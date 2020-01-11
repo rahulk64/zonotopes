@@ -95,23 +95,22 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #A_h = A * np.diag(d)
         temp = tf.reshape(tf.linalg.diag(d), [tf.shape(d)[0]])
         A_h = tf.Variable(A * temp, dtype=tf.float64)
-        print("d.shape", d.shape)
-        print("diag.shape", tf.linalg.diag(d).shape)
-        print("A_h shape", A_h.shape)
+
         #lsmr_op = np.vstack(A_h, np.diag(diag_root_h))
-        print("diag_root_h.shape", diag_root_h.shape)
         lsmr_op = tf.concat([A_h, tf.linalg.diag(diag_root_h)], axis=0)
-        print("lsmr_op.shape", lsmr_op.shape)
+
         r_aug = tf.reshape(r_aug, (tf.size(r_aug), 1))
         p_h = tf.linalg.lstsq(lsmr_op, r_aug)
 
         p = d * p_h
 
-        p_dot_g = np.dot(p, g.T)
+        #p_dot_g = np.dot(p, g.T)
+        p_dot_g = tf.tensordot(p, tf.transpose(g), 1) 
+
         if p_dot_g > 0:
             termination_status = -1
 
-        theta = 1 - min(0.005, g_norm)
+        theta = 1 - tf.math.minimum(tf.constant(0.005, dtype=tf.float64), g_norm)
 
         step = select_step(x, A, g_h, diag_h, p, p_h, d, lb, ub, theta, dis=d)
         cost_change = -evaluate_quadratic(A, g, step)

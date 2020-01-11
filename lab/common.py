@@ -93,15 +93,25 @@ def in_bounds(x, lb, ub):
 
 
 def step_size_to_bound(x, s, lb, ub):
-    non_zero = np.nonzero(s)
+    #non_zero = np.nonzero(s)
+    zero = tf.constant(0, dtype=tf.float64)
+    non_zero = tf.not_equal(s, zero)
+
     s_non_zero = s[non_zero]
-    steps = np.empty_like(x)
-    steps.fill(np.inf)
+    #steps = np.empty_like(x)
+    #steps = tf.Variable(np.empty(tf.shape(x), dtype=x.dtype) #collections=[]
+    #steps.fill(np.inf)
+    steps = tf.dtypes.cast(tf.fill(tf.shape(x), np.inf), dtype=tf.float64)
     with np.errstate(over='ignore'):
-        steps[non_zero] = np.maximum((lb - x)[non_zero] / s_non_zero,
-                                     (ub - x)[non_zero] / s_non_zero)
-    min_step = np.min(steps)
-    return min_step, np.equal(steps, min_step) * np.sign(s).astype(int)
+        #steps[non_zero] = np.maximum((lb - x)[non_zero] / s_non_zero,
+        #                             (ub - x)[non_zero] / s_non_zero)
+        #steps[non_zero] = tf.math.maximum((lb - x)[non_zero] / s_non_zero,
+        #                             (ub - x)[non_zero] / s_non_zero)
+        steps = tf.where(tf.equal(non_zero, False), steps, tf.math.maximum((lb - x)[non_zero] / s_non_zero, (ub - x)[non_zero] / s_non_zero))
+    #min_step = np.min(steps)
+    min_step = tf.math.reduce_min(steps)
+    #return min_step, np.equal(steps, min_step) * np.sign(s).astype(int)
+    return min_step, tf.dtypes.cast(tf.equal(steps, min_step), tf.int32) * tf.dtypes.cast(tf.sign(s), tf.int32)
 
 
 def find_active_constraints(x, lb, ub, rtol=1e-10):
