@@ -169,7 +169,8 @@ def find_active_constraints(x, lb, ub, rtol=1e-10):
     lower_dist = x - lb
     upper_dist = ub - x
 
-    one = tf.Variable(1.0, dtype=tf.float64)
+    #one = tf.Variable(1.0, dtype=tf.float64)
+    one = tf.ones_like(lb, dtype=tf.float64)
 
     lower_threshold = rtol * tf.maximum(one, tf.abs(lb))
     upper_threshold = rtol * tf.maximum(one, tf.abs(ub))

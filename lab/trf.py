@@ -24,22 +24,25 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     x, _ = reflective_transformation(x_lsq, lb, ub)
     x = make_strictly_feasible(x, lb, ub, rstep=0.1)
 
-    if lsq_solver == 'exact':
-        QT, R, perm = qr(A, mode='economic', pivoting=True)
-        QT = QT.T
-
-        if m < n:
-            R = np.vstack((R, np.zeros((n - m, n))))
-
-        QTr = np.zeros(n)
-        k = min(m, n)
-    elif lsq_solver == 'lsmr':
-        r_aug = np.zeros(m + n)
-        auto_lsmr_tol = False
-        if lsmr_tol is None:
-            lsmr_tol = 1e-2 * tol
-        elif lsmr_tol == 'auto':
-            auto_lsmr_tol = True
+    #if lsq_solver == 'exact':
+    #    print("this method is not supported and will crash")
+    #    QT, R, perm = qr(A, mode='economic', pivoting=True)
+    #    QT = QT.T
+    #
+    #    if m < n:
+    #        R = np.vstack((R, np.zeros((n - m, n))))
+    #
+    #    QTr = np.zeros(n)
+    #    k = min(m, n)
+    #elif lsq_solver == 'lsmr':
+    #r_aug = tf.Variable(tf.zeros(m + n))
+    r_aug = np.zeros(m+n)
+    print("r_aug", r_aug.shape)
+    auto_lsmr_tol = False
+    if lsmr_tol is None:
+        lsmr_tol = 1e-2 * tol
+    elif lsmr_tol == 'auto':
+        auto_lsmr_tol = True
 
     #r = A.dot(x) - b
     r = tf.tensordot(A, x, 1) - b
@@ -72,7 +75,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
         #diag_h = np.diag(g.T * dv)
         diag_h = tf.linalg.diag_part(tf.transpose(g) * dv)
-        diag_root_h = tf.Variable(diag_h ** 0.5, dtype=tf.float64)
+        diag_root_h = tf.dtypes.cast(diag_h ** 0.5, dtype=tf.float64)
         d = v ** 0.5
         #g_h = d * np.squeeze(np.asarray(g.T))
         g_h = d * g
@@ -81,7 +84,8 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #lsmr_op = regularized_lsq_operator(A_h, diag_root_h)
 
         #r_aug[:m] = r
-        r_aug = tf.Variable(tf.convert_to_tensor(r_aug))
+        r_aug = tf.Variable(tf.convert_to_tensor(r_aug), dtype=tf.float64)
+        #r_aug = tf.Variable(r_aug, dtype=tf.float64)
         r_aug = r_aug[:m].assign(r*tf.ones(m, dtype=tf.float64))
         if auto_lsmr_tol:
             eta = 1e-2 * min(0.5, g_norm)
@@ -96,8 +100,8 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #lsmr_op = np.vstack(A_h, np.diag(diag_root_h))
         lsmr_op = tf.concat([A_h, tf.linalg.diag(diag_root_h)], axis=0)
 
-        r_aug = tf.reshape(r_aug, (tf.size(r_aug), 1))
-        p_h = tf.linalg.lstsq(lsmr_op, r_aug)
+        r_augl = tf.reshape(r_aug, (tf.size(r_aug), 1))
+        p_h = tf.linalg.lstsq(lsmr_op, r_augl)
 
         p = d * p_h
 
