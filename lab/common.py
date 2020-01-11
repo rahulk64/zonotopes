@@ -113,18 +113,22 @@ def evaluate_quadratic(J, g, s, diag=None, d=None):
         #q = np.vdot(Js, Js)
         q = tf.tensordot(Js, Js, 1)
         if diag is not None:
-            q += np.dot(s * diag, s)
+            #q += np.dot(s * diag, s)
+            q += tf.tensordot(s * diag, s, 1)
     else:
         #Js = J.dot(s.T)
         if d is not None:
-            Js = JDot(J, s.T, d)
+            Js = JDot(J, tf.transpose(s), d)
         else:
             Js = J.dot(s.T)
-        q = np.sum(Js**2, axis=0)
+        #q = np.sum(Js**2, axis=0)
+        q = tf.reduce_sum(Js**2, axis=0)
         if diag is not None:
-            q += np.sum(diag * s**2, axis=1)
+            #q += np.sum(diag * s**2, axis=1)
+            q += tf.reduce_sum(diag * s ** 2, axis=1)
 
-    l = np.dot(s, g.T)
+    #l = np.dot(s, g.T)
+    l = tf.tensordot(s, g, 1)
 
     return 0.5 * q + l
 
