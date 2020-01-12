@@ -23,7 +23,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     x = reflective_transformation(x_lsq, lb, ub)
     x = tf.reshape(x, [tf.size(x)])
     x = make_strictly_feasible(x, lb, ub, rstep=0.1)
-    tf.print("X:", x, output_stream=sys.stdout)
 
     r_aug = tf.zeros(m+n, dtype=tf.float64)
     auto_lsmr_tol = False
@@ -46,8 +45,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
     for iteration in tf.range(max_iter):
         v, dv = CL_scaling_vector(x, g, lb, ub)
-        tf.print("V:", v, output_stream=sys.stdout) 
-        tf.print("DV:", dv, output_stream=sys.stdout) 
         g_scaled = tf.transpose(g) * v 
         g_norm = tf.norm(g_scaled, ord=np.inf)
         if g_norm < tol:
@@ -65,7 +62,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         diag_h = tf.linalg.diag_part(stuff)
         diag_root_h = tf.dtypes.cast(diag_h ** 0.5, dtype=tf.float64)
         d = v ** 0.5
-        tf.print("D:", d, output_stream=sys.stdout)
         #g_h = d * np.squeeze(np.asarray(g.T))
         g_h = d * g
 
@@ -97,8 +93,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         r_augl = tf.reshape(r_aug, (tf.size(r_aug), 1))
         p_h = -1 * tf.linalg.lstsq(lsmr_op, r_augl)
         p_h = tf.reshape(p_h, [tf.size(p_h)])
-
-        tf.print("LSTSQ", p_h, output_stream=sys.stdout)
 
         p = d * p_h
 

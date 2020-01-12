@@ -8,7 +8,7 @@ import numpy as np
 from numpy.linalg import norm
 import tensorflow as tf
 
-from lsmr import matvec
+from ops import matvec
 
 EPS = np.finfo(float).eps
 
