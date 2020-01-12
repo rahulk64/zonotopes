@@ -15,14 +15,18 @@ from common import (
 @tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                verbose):
-    print("x_lsq", x_lsq.shape)
+    print("X_LSQ", x_lsq.shape)
     lb = tf.reshape(lb, tf.shape(x_lsq))
     ub = tf.reshape(ub, tf.shape(x_lsq))
 
     tol = tf.constant(tol, dtype=tf.float64)
     m, n = A.shape
     x, _ = reflective_transformation(x_lsq, lb, ub)
+    x = tf.reshape(x, [tf.size(x)])
+    print("x shape", x.shape)
+    return x
     x = make_strictly_feasible(x, lb, ub, rstep=0.1)
+    print("X shape", x.shape)
 
     #if lsq_solver == 'exact':
     #    print("this method is not supported and will crash")
@@ -39,7 +43,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     #r_aug = tf.Variable(np.zeros(m+n))
     #r_aug.assign(tf.zeros(m+n, dtype=tf.float64))
     r_aug = tf.zeros(m+n, dtype=tf.float64)
-    print("r_aug", r_aug.shape)
     auto_lsmr_tol = False
     if lsmr_tol is None:
         lsmr_tol = 1e-2 * tol
@@ -47,10 +50,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         auto_lsmr_tol = True
 
     #r = A.dot(x) - b
-    print("tensordot", tf.tensordot(A, x, 1).shape)
-    print("b", b.shape)
     r = tf.tensordot(A, x, 1) - b
-    print("R SHape", r.shape)
     #g = compute_grad(A, r.T).T
     #g = compute_grad(A, tf.transpose(r))
     g = compute_grad(A, r) 
@@ -65,8 +65,9 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     if max_iter is None:
         max_iter = 100
 
+    print("X", x.shape)
+
     for iteration in tf.range(max_iter):
-        print("iteration")
         v, dv = CL_scaling_vector(x, g, lb, ub)
         g_scaled = tf.transpose(g) * v 
         g_norm = tf.norm(g_scaled, ord=np.inf)
@@ -133,8 +134,10 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         if cost_change < 0:
             x, step, cost_change = backtracking(
                 A, g, x, p, theta, p_dot_g, lb, ub)
+            print("x.shape cost", x.shape)
         else:
             x = make_strictly_feasible(x + step, lb, ub, rstep=0)
+            print("x.shape else", x.shape)
 
         step_norm = tf.norm(step)
         #r = A.dot(x) - b
@@ -150,7 +153,9 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
     active_mask = find_active_constraints(x, lb, ub, rtol=tol)
 
-    return x
+    #return x_lsq
+    print("RESIZED SHAPE", tf.reshape(x, [tf.size(x), 1]).shape)
+    return tf.reshape(x, [tf.size(x), 1])
 
 def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
     """Find an appropriate step size using backtracking line search."""

@@ -264,10 +264,15 @@ def reflective_transformation(y, lb, ub):
     if in_bounds(y, lb, ub):
         return y, tf.ones_like(y)
 
+    y = tf.reshape(y, [tf.size(y)])
+    lb = tf.reshape(lb, [tf.size(lb)])
+    ub = tf.reshape(ub, [tf.size(ub)])
+
     lb_finite = tf.math.is_finite(lb)
     ub_finite = tf.math.is_finite(ub)
 
-    x = tf.dtypes.cast(tf.identity(y), dtype=tf.float64)
+    x = tf.dtypes.cast(tf.reshape(tf.identity(y), [tf.size(y)]), dtype=tf.float64)
+    print("FIRST X SHAPE", x.shape)
     g_negative = tf.zeros_like(y, dtype=bool)
 
     mask = lb_finite & ~ub_finite
@@ -280,6 +285,9 @@ def reflective_transformation(y, lb, ub):
     #x[mask] = np.minimum(y[mask], 2 * ub[mask] - y[mask])
     #g_negative[mask] = y[mask] > ub[mask]
     x = tf.where(tf.equal(mask, False), x, tf.minimum(y[mask], 2 * ub[mask] - y[mask]))
+    print("y", y.shape)
+    print("ub", ub.shape)
+    print("X SHAPE", x.shape)
     g_negative = tf.where(tf.equal(mask, False), g_negative, y[mask] > ub[mask])
 
     mask = lb_finite & ub_finite
@@ -289,6 +297,7 @@ def reflective_transformation(y, lb, ub):
     #x[mask] = lb[mask] + np.minimum(t, 2 * d[mask] - t)
     #g_negative[mask] = t > d[mask]
     x = tf.where(tf.equal(mask, False), x, lb[mask] + tf.minimum(t, 2 * d[mask] - t))
+    print("ANOTHER X", x.shape)
     g_negative = tf.where(tf.equal(mask, False), g_negative, t > d[mask])
 
     g = tf.ones_like(y)

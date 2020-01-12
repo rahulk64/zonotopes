@@ -80,8 +80,8 @@ def _sym_ortho(a, b):
 
 def matmat(A, X):
     #X = np.asanyarray(X)
-    if tf.rank(X) != 2:
-        print("X shape is not correct", X.shape)
+    #if tf.rank(X) != 2:
+    #    print("X shape is not correct", X.shape)
         #raise ValueError('expected 2-d ndarray or matrix, not', tf.rank(X))
 
     #if X.shape[0] != A.shape[1]:

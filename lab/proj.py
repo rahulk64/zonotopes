@@ -43,16 +43,13 @@ def projZonotope(A, b):
     b = tf.cast(b, tf.float64)
     b = tf.reshape(b, (tf.size(b), 1))
 
-    print("A.shape", A.shape)
-    print("b.shape", b.shape)
-
     x_lsq = tf.linalg.lstsq(A, b)
     #temp = tf.reshape(tf.linalg.diag(x_lsq), [tf.shape(x_lsq)[0]])
     #tf.print("x_lsq", x_lsq, output_stream=sys.stdout)
     #print(x_lsq.shape)
     #eps = bvls(A, b, x_lsq, neg_ones, ones, 1e-13, 200, 2)
     eps = trf_linear(A, b, x_lsq, neg_ones, ones, 1e-13, 'lsmr', 1e-13, 200, 0)
-    eps = tf.reshape(eps, [eps.shape[0]])
+    #eps = tf.reshape(eps, [eps.shape[0]])
 
     #NOTE THIS WORKS
     #eps = lsq_linear(A_coo, b, bounds=(neg_ones, ones), lsq_solver='lsmr', lsmr_tol=1e-13, verbose=0).x

@@ -24,9 +24,6 @@ print("A SHAPE", A.shape)
 print("A_eval", A_eval.shape)
 
 eps = projZonotope(A, A_eval)
-with tf.Session() as sess:
-    e = sess.run(eps)
-    print("eps", eps)
 print("eps", eps)
 print("Ae", np.matmul(A, eps))
 """
