@@ -49,45 +49,24 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         g_norm = tf.norm(g_scaled, ord=np.inf)
         if g_norm < tol:
             termination_status = 1
-        #else:
-            #termination_status = 0
 
         if not termination_status == 0: 
             break
 
-        #diag_h = np.diag(g.T * dv)
-        #stuff = tf.transpose(g) * dv
-        #stuff = tf.tensordot(g, dv, axes=1)
         stuff = g * tf.reshape(dv, [tf.size(dv), 1])
         diag_h = tf.linalg.diag_part(stuff)
         diag_root_h = tf.dtypes.cast(diag_h ** 0.5, dtype=tf.float64)
         d = v ** 0.5
-        #g_h = d * np.squeeze(np.asarray(g.T))
         g_h = d * g
 
-        #A_h = right_multiplied_operator(A, d)
-        #lsmr_op = regularized_lsq_operator(A_h, diag_root_h)
-
-        #r_aug[:m] = r
-        #r_aug = tf.Variable(tf.convert_to_tensor(r_aug), dtype=tf.float64)
-        #r_aug = tf.Variable(r_aug, dtype=tf.float64)
-        #r_aug.assign(r_aug[:m].assign(r*tf.ones(m, dtype=tf.float64)))
         r_aug = tf.concat([tf.reshape(r, [tf.shape(r)[0]]), tf.zeros(n, dtype=tf.float64)], axis=0)
 
         if auto_lsmr_tol:
             eta = 1e-2 * min(0.5, g_norm)
             lsmr_tol = max(EPS, min(0.1, eta * g_norm))
-        #p_h = -lsmr(lsmr_op, r_aug, atol=lsmr_tol, btol=lsmr_tol)[0]
-        #p_h = -lsmr(A, r_aug, dis=d, diag=diag_root_h, atol=lsmr_tol, btol=lsmr_tol)[0]
-
-        #A_h = A * np.diag(d)
-        #temp = tf.reshape(tf.linalg.diag(d), [tf.shape(d)[0]])
         temp = tf.linalg.diag(d)
-        #A_h = tf.Variable(A * temp, dtype=tf.float64)
-        #A_h = tf.dtypes.cast(A * temp, dtype=tf.float64)
         A_h = tf.dtypes.cast(tf.matmul(A, temp), dtype=tf.float64)
 
-        #lsmr_op = np.vstack(A_h, np.diag(diag_root_h))
         lsmr_op = tf.concat([A_h, tf.linalg.diag(diag_root_h)], axis=0)
 
         r_augl = tf.reshape(r_aug, (tf.size(r_aug), 1))
@@ -96,7 +75,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
         p = d * p_h
 
-        #p_dot_g = np.dot(p, g.T)
         p_dot_g = tf.tensordot(p, tf.transpose(g), 1) 
 
         if p_dot_g > 0:
@@ -117,32 +95,21 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
             x = make_strictly_feasible(x + step, lb, ub, rstep=0)
 
         step_norm = tf.norm(step)
-        #r = A.dot(x) - b
         r = tf.tensordot(A, x, 1) - b
-        #g = compute_grad(A, r.T).T
         g = compute_grad(A, tf.transpose(r))
 
         if cost_change < tol * cost:
             termination_status = 2
 
-        #cost = 0.5 * np.dot(r, r.T)
         cost = 0.5 * tf.tensordot(r, r, 1)
 
     active_mask = find_active_constraints(x, lb, ub, rtol=tol)
 
-    #return x_lsq
     return x
 
 def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
     """Find an appropriate step size using backtracking line search."""
     alpha = tf.dtypes.cast(1., dtype=tf.float64)
-    #while True:
-    #    x_new, _ = reflective_transformation(x + alpha * p, lb, ub)
-    #    step = x_new - x
-    #    cost_change = -evaluate_quadratic(A, g, step)
-    #    if cost_change > -0.1 * alpha * p_dot_g:
-    #        break
-    #    alpha *= 0.5
     x_new = reflective_transformation(x + alpha * p, lb, ub)
     step = x_new - x
     cost_change = -evaluate_quadratic(A, g, step)
@@ -153,7 +120,6 @@ def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
         cost_change = -evaluate_quadratic(A, g, step)
 
     active = find_active_constraints(x_new, lb, ub)
-    #if np.any(active != 0):
     if tf.reduce_any(active != 0):
         x_new = reflective_transformation(x + theta * alpha * p, lb, ub)
         x_new = make_strictly_feasible(x_new, lb, ub, rstep=0)
@@ -169,10 +135,7 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
         return p
 
     p_stride, hits = step_size_to_bound(x, p, lb, ub)
-    #r_h = np.copy(p_h)
     r_h = tf.identity(p_h)
-    #r_h[hits.astype(bool)] *= -1
-    #r_h[tf.dtypes.cast(hits, tf.bool)] *= -1
     r_h = tf.where(tf.equal(hits, False), r_h, r_h*-1)
     r = d * r_h
 

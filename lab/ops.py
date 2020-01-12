@@ -16,22 +16,3 @@ def matvec(A, x):
     yt = tf.reshape(y, (M,))
 
     return yt
-
-def rmatvec(A, x):
-    m, n = A.shape
-    x1 = x[:m]
-    x2 = x[m:]
-
-    M,N = A.shape
-
-    y = matvec(tf.linalg.adjoint(A), x)
-
-    if tf.rank(x)  == 1:
-        y = tf.reshape(y, (N,))
-    elif tf.rank(x)  == 2:
-        y = tf.reshape(y, (N,1))
-    else:
-        print('invalid shape returned by user-defined rmatvec()')
-
-    return y
-

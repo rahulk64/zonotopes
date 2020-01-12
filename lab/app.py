@@ -17,12 +17,11 @@ A_eval = k - b
 # need to squeeze for dimension alignment
 A_eval = np.squeeze(np.asarray(A_eval))
 
+# convert to tensorflow values
 A = tf.convert_to_tensor(A)
 A_eval = tf.convert_to_tensor(A_eval)
 
-print("A SHAPE", A.shape)
-print("A_eval", A_eval.shape)
-
+# now run projection algorithm
 eps = projZonotope(A, A_eval)
 print("eps", eps)
 print("Ae", np.matmul(A, eps))
