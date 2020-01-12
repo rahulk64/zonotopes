@@ -262,7 +262,7 @@ def CL_scaling_vector(x, g, lb, ub):
 
 def reflective_transformation(y, lb, ub):
     if in_bounds(y, lb, ub):
-        return y, tf.ones_like(y)
+        return y
 
     y = tf.reshape(y, [tf.size(y)])
     lb = tf.reshape(lb, [tf.size(lb)])
@@ -273,22 +273,21 @@ def reflective_transformation(y, lb, ub):
 
     x = tf.dtypes.cast(tf.reshape(tf.identity(y), [tf.size(y)]), dtype=tf.float64)
     print("FIRST X SHAPE", x.shape)
-    g_negative = tf.zeros_like(y, dtype=bool)
 
     mask = lb_finite & ~ub_finite
     #x[mask] = tf.maximum(y[mask], 2 * lb[mask] - y[mask])
     #g_negative[mask] = y[mask] < lb[mask]
-    x = tf.where(tf.equal(mask, False), x, tf.maximum(y[mask], 2 * lb[mask] - y[mask]))
-    g_negative = tf.where(tf.equal(mask, False), g_negative, y[mask] < lb[mask])
+    #x = tf.where(tf.equal(mask, False), x, tf.maximum(y[mask], 2 * lb[mask] - y[mask]))
+    x = tf.where(tf.equal(mask, False), x, tf.maximum(y, 2 * lb - y))
 
     mask = ~lb_finite & ub_finite
     #x[mask] = np.minimum(y[mask], 2 * ub[mask] - y[mask])
     #g_negative[mask] = y[mask] > ub[mask]
-    x = tf.where(tf.equal(mask, False), x, tf.minimum(y[mask], 2 * ub[mask] - y[mask]))
+    #x = tf.where(tf.equal(mask, False), x, tf.minimum(y[mask], 2 * ub[mask] - y[mask]))
+    x = tf.where(tf.equal(mask, False), x, tf.minimum(y, 2 * ub - y))
     print("y", y.shape)
     print("ub", ub.shape)
     print("X SHAPE", x.shape)
-    g_negative = tf.where(tf.equal(mask, False), g_negative, y[mask] > ub[mask])
 
     mask = lb_finite & ub_finite
     d = ub - lb
@@ -296,15 +295,10 @@ def reflective_transformation(y, lb, ub):
     t = tf.math.floormod(y[mask] - lb[mask], 2 * d[mask])
     #x[mask] = lb[mask] + np.minimum(t, 2 * d[mask] - t)
     #g_negative[mask] = t > d[mask]
-    x = tf.where(tf.equal(mask, False), x, lb[mask] + tf.minimum(t, 2 * d[mask] - t))
+    x = tf.where(tf.equal(mask, False), x, lb + tf.minimum(t, 2 * d - t))
     print("ANOTHER X", x.shape)
-    g_negative = tf.where(tf.equal(mask, False), g_negative, t > d[mask])
 
-    g = tf.ones_like(y)
-    #g[g_negative] = -1
-    g = tf.where(tf.equal(g_negative, False), g, -1)
-
-    return x, g
+    return x
 
 
 def compute_grad(J, f):

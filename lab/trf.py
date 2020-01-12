@@ -21,10 +21,9 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
     tol = tf.constant(tol, dtype=tf.float64)
     m, n = A.shape
-    x, _ = reflective_transformation(x_lsq, lb, ub)
+    x = reflective_transformation(x_lsq, lb, ub)
     x = tf.reshape(x, [tf.size(x)])
     print("x shape", x.shape)
-    return x
     x = make_strictly_feasible(x, lb, ub, rstep=0.1)
     print("X shape", x.shape)
 
@@ -167,19 +166,19 @@ def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
     #    if cost_change > -0.1 * alpha * p_dot_g:
     #        break
     #    alpha *= 0.5
-    x_new, _ = reflective_transformation(x + alpha * p, lb, ub)
+    x_new = reflective_transformation(x + alpha * p, lb, ub)
     step = x_new - x
     cost_change = -evaluate_quadratic(A, g, step)
     while not cost_change > -0.1 * alpha * p_dot_g:
         alpha *= 0.5
-        x_new, _ = reflective_transformation(x + alpha * p, lb, ub)
+        x_new = reflective_transformation(x + alpha * p, lb, ub)
         step = x_new - x
         cost_change = -evaluate_quadratic(A, g, step)
 
     active = find_active_constraints(x_new, lb, ub)
     #if np.any(active != 0):
     if tf.reduce_any(active != 0):
-        x_new, _ = reflective_transformation(x + theta * alpha * p, lb, ub)
+        x_new = reflective_transformation(x + theta * alpha * p, lb, ub)
         x_new = make_strictly_feasible(x_new, lb, ub, rstep=0)
         step = x_new - x
         cost_change = -evaluate_quadratic(A, g, step)
