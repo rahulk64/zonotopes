@@ -15,6 +15,7 @@ from common import (
 @tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                verbose):
+    b = tf.reshape(b, [tf.size(b)])
     print("X_LSQ", x_lsq.shape)
     lb = tf.reshape(lb, tf.shape(x_lsq))
     ub = tf.reshape(ub, tf.shape(x_lsq))
@@ -49,7 +50,10 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         auto_lsmr_tol = True
 
     #r = A.dot(x) - b
+    print("tensordot", tf.tensordot(A, x, 1).shape)
+    print("b", b.shape)
     r = tf.tensordot(A, x, 1) - b
+    print("R SHAPE", r.shape)
     #g = compute_grad(A, r.T).T
     #g = compute_grad(A, tf.transpose(r))
     g = compute_grad(A, r) 
@@ -79,11 +83,21 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
             break
 
         #diag_h = np.diag(g.T * dv)
-        diag_h = tf.linalg.diag_part(tf.transpose(g) * dv)
+        #stuff = tf.transpose(g) * dv
+        #stuff = tf.tensordot(g, dv, axes=1)
+        print("G>>>>", g.shape)
+        print("RESHAPE>>>", tf.reshape(dv, [tf.size(dv), 1]).shape)
+        stuff = g * tf.reshape(dv, [tf.size(dv), 1])
+        print("STUF >>>", stuff.shape)
+        diag_h = tf.linalg.diag_part(stuff)
+        print("diag_h", diag_h.shape)
         diag_root_h = tf.dtypes.cast(diag_h ** 0.5, dtype=tf.float64)
+        print("V SHAPE", v.shape)
         d = v ** 0.5
+        print("D SHAPE", d.shape)
         #g_h = d * np.squeeze(np.asarray(g.T))
         g_h = d * g
+        print("G_H SHAPE>>>>", g_h.shape)
 
         #A_h = right_multiplied_operator(A, d)
         #lsmr_op = regularized_lsq_operator(A_h, diag_root_h)
@@ -104,15 +118,23 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #p_h = -lsmr(A, r_aug, dis=d, diag=diag_root_h, atol=lsmr_tol, btol=lsmr_tol)[0]
 
         #A_h = A * np.diag(d)
-        temp = tf.reshape(tf.linalg.diag(d), [tf.shape(d)[0]])
+        #temp = tf.reshape(tf.linalg.diag(d), [tf.shape(d)[0]])
+        temp = tf.linalg.diag(d)
         #A_h = tf.Variable(A * temp, dtype=tf.float64)
-        A_h = tf.dtypes.cast(A * temp, dtype=tf.float64)
+        print("A SHAPE >>>", A.shape)
+        print("TEMP SHAPE >>>", temp.shape)
+        #A_h = tf.dtypes.cast(A * temp, dtype=tf.float64)
+        A_h = tf.dtypes.cast(tf.matmul(A, temp), dtype=tf.float64)
 
         #lsmr_op = np.vstack(A_h, np.diag(diag_root_h))
+        print("A_H SHAPE >>>", A_h.shape)
+        print("DIAG_ROOT_H", diag_root_h.shape)
+        print("OTHER >>>", tf.linalg.diag(diag_root_h).shape)
         lsmr_op = tf.concat([A_h, tf.linalg.diag(diag_root_h)], axis=0)
 
         r_augl = tf.reshape(r_aug, (tf.size(r_aug), 1))
         p_h = tf.linalg.lstsq(lsmr_op, r_augl)
+        p_h = tf.reshape(p_h, [tf.size(p_h)])
 
         p = d * p_h
 

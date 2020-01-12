@@ -94,30 +94,17 @@ def minimize_quadratic_1d(a, b, lb, ub, c=0):
 
 
 def evaluate_quadratic(J, g, s, diag=None, d=None):
-    if tf.rank(s) == 1:
-        #Js = J.dot(s)
-        if d is not None:
-            Js = JDot(J, s, d)
-        else:
-            #Js = J.dot(s)
-            Js = tf.tensordot(J, s, 1)
-        #q = np.vdot(Js, Js)
-        q = tf.tensordot(Js, Js, 1)
-        if diag is not None:
-            #q += np.dot(s * diag, s)
-            q += tf.tensordot(s * diag, s, 1)
+    #Js = J.dot(s)
+    if d is not None:
+        Js = JDot(J, s, d)
     else:
-        #Js = J.dot(s.T)
-        if d is not None:
-            Js = JDot(J, tf.transpose(s), d)
-        else:
-            #Js = J.dot(s.T)
-            Js = tf.tensordot(J, tf.transpose(s), 1)
-        #q = np.sum(Js**2, axis=0)
-        q = tf.reduce_sum(Js**2, axis=0)
-        if diag is not None:
-            #q += np.sum(diag * s**2, axis=1)
-            q += tf.reduce_sum(diag * s ** 2, axis=1)
+        #Js = J.dot(s)
+        Js = tf.tensordot(J, s, 1)
+    #q = np.vdot(Js, Js)
+    q = tf.tensordot(Js, Js, 1)
+    if diag is not None:
+        #q += np.dot(s * diag, s)
+        q += tf.tensordot(s * diag, s, 1)
 
     #l = np.dot(s, g.T)
     l = tf.tensordot(s, tf.transpose(g), 1)
@@ -206,27 +193,31 @@ def make_strictly_feasible(x, lb, ub, rstep=1e-10):
     if rstep == 0:
         #x_new[lower_mask] = tf.math.nextafter(lb[lower_mask], ub[lower_mask])
         #x_new[upper_mask] = tf.math.nextafter(ub[upper_mask], lb[upper_mask])
-        x_new = tf.where(tf.equal(lower_mask, False), x_new, tf.math.nextafter(lb[lower_mask], ub[lower_mask]))
-        x_new = tf.where(tf.equal(upper_mask, False), x_new, tf.math.nextafter(ub[upper_mask], lb[upper_mask]))
+        x_new = tf.where(tf.equal(lower_mask, False), x_new, tf.math.nextafter(lb, ub))
+        x_new = tf.where(tf.equal(upper_mask, False), x_new, tf.math.nextafter(ub, lb))
     else:
         #x_new[lower_mask] = (lb[lower_mask] +
         #                     rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(lb[lower_mask])))
-        x_new = tf.where(tf.equal(lower_mask, False), x_new, lb[lower_mask] +
-                             rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(lb[lower_mask])))
+        x_new = tf.where(tf.equal(lower_mask, False), x_new, lb +
+                             rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(lb)))
 
         #x_new[upper_mask] = (ub[upper_mask] -
         #                     rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(ub[upper_mask])))
-        x_new = tf.where(tf.equal(upper_mask, False), x_new, ub[upper_mask] -
-                             rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(ub[upper_mask])))
+        x_new = tf.where(tf.equal(upper_mask, False), x_new, ub -
+                             rstep * tf.maximum(tf.constant(1.0, dtype=tf.float64), tf.abs(ub)))
         
     tight_bounds = (x_new < lb) | (x_new > ub)
     #x_new[tight_bounds] = 0.5 * (lb[tight_bounds] + ub[tight_bounds])
-    x_new = tf.where(tf.equal(tight_bounds, False), x_new, 0.5 * (lb[tight_bounds] + ub[tight_bounds])) 
+    x_new = tf.where(tf.equal(tight_bounds, False), x_new, 0.5 * (lb + ub)) 
 
     return x_new
 
 
 def CL_scaling_vector(x, g, lb, ub):
+    print("X", x.shape)
+    print("G", g.shape)
+    print("LB", lb.shape)
+    print("UB", ub.shape)
     lb = tf.reshape(lb, tf.shape(x))
     ub = tf.reshape(ub, tf.shape(x))
     #v = np.ones_like(x)
@@ -271,7 +262,8 @@ def reflective_transformation(y, lb, ub):
     lb_finite = tf.math.is_finite(lb)
     ub_finite = tf.math.is_finite(ub)
 
-    x = tf.dtypes.cast(tf.reshape(tf.identity(y), [tf.size(y)]), dtype=tf.float64)
+    #x = tf.dtypes.cast(tf.reshape(tf.identity(y), [tf.size(y)]), dtype=tf.float64)
+    x = tf.dtypes.cast(tf.identity(y), dtype=tf.float64)
     print("FIRST X SHAPE", x.shape)
 
     mask = lb_finite & ~ub_finite
