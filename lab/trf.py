@@ -14,7 +14,7 @@ from common import (
 
 @tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
-               verbose, r_aug):
+               verbose):
     print("x_lsq", x_lsq.shape)
     lb = tf.reshape(lb, tf.shape(x_lsq))
     ub = tf.reshape(ub, tf.shape(x_lsq))
@@ -37,7 +37,8 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     #elif lsq_solver == 'lsmr':
     #r_aug = tf.Variable(tf.zeros(m + n))
     #r_aug = tf.Variable(np.zeros(m+n))
-    r_aug.assign(tf.zeros(m+n, dtype=tf.float64))
+    #r_aug.assign(tf.zeros(m+n, dtype=tf.float64))
+    r_aug = tf.zeros(m+n, dtype=tf.float64)
     print("r_aug", r_aug.shape)
     auto_lsmr_tol = False
     if lsmr_tol is None:
@@ -46,7 +47,10 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         auto_lsmr_tol = True
 
     #r = A.dot(x) - b
+    print("tensordot", tf.tensordot(A, x, 1).shape)
+    print("b", b.shape)
     r = tf.tensordot(A, x, 1) - b
+    print("R SHape", r.shape)
     #g = compute_grad(A, r.T).T
     #g = compute_grad(A, tf.transpose(r))
     g = compute_grad(A, r) 
@@ -87,7 +91,12 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #r_aug[:m] = r
         #r_aug = tf.Variable(tf.convert_to_tensor(r_aug), dtype=tf.float64)
         #r_aug = tf.Variable(r_aug, dtype=tf.float64)
-        r_aug.assign(r_aug[:m].assign(r*tf.ones(m, dtype=tf.float64)))
+        #r_aug.assign(r_aug[:m].assign(r*tf.ones(m, dtype=tf.float64)))
+        print("R SHAPE", r.shape)
+        print("ZERO SHAPE", tf.zeros(n).shape)
+        r_aug = tf.concat([tf.reshape(r, [tf.shape(r)[0]]), tf.zeros(n, dtype=tf.float64)], axis=0)
+        print("r_aug", r_aug.shape)
+
         if auto_lsmr_tol:
             eta = 1e-2 * min(0.5, g_norm)
             lsmr_tol = max(EPS, min(0.1, eta * g_norm))
@@ -96,7 +105,8 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
         #A_h = A * np.diag(d)
         temp = tf.reshape(tf.linalg.diag(d), [tf.shape(d)[0]])
-        A_h = tf.Variable(A * temp, dtype=tf.float64)
+        #A_h = tf.Variable(A * temp, dtype=tf.float64)
+        A_h = tf.dtypes.cast(A * temp, dtype=tf.float64)
 
         #lsmr_op = np.vstack(A_h, np.diag(diag_root_h))
         lsmr_op = tf.concat([A_h, tf.linalg.diag(diag_root_h)], axis=0)
@@ -144,7 +154,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
 def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
     """Find an appropriate step size using backtracking line search."""
-    alpha = tf.Variable(1., dtype=tf.float64)
+    alpha = tf.dtypes.cast(1., dtype=tf.float64)
     #while True:
     #    x_new, _ = reflective_transformation(x + alpha * p, lb, ub)
     #    step = x_new - x
