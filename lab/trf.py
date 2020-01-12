@@ -24,9 +24,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     m, n = A.shape
     x = reflective_transformation(x_lsq, lb, ub)
     x = tf.reshape(x, [tf.size(x)])
-    print("x shape", x.shape)
     x = make_strictly_feasible(x, lb, ub, rstep=0.1)
-    print("X shape", x.shape)
 
     #if lsq_solver == 'exact':
     #    print("this method is not supported and will crash")
@@ -50,10 +48,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         auto_lsmr_tol = True
 
     #r = A.dot(x) - b
-    print("tensordot", tf.tensordot(A, x, 1).shape)
-    print("b", b.shape)
     r = tf.tensordot(A, x, 1) - b
-    print("R SHAPE", r.shape)
     #g = compute_grad(A, r.T).T
     #g = compute_grad(A, tf.transpose(r))
     g = compute_grad(A, r) 
@@ -67,8 +62,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
 
     if max_iter is None:
         max_iter = 100
-
-    print("X", x.shape)
 
     for iteration in tf.range(max_iter):
         v, dv = CL_scaling_vector(x, g, lb, ub)
@@ -85,19 +78,12 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #diag_h = np.diag(g.T * dv)
         #stuff = tf.transpose(g) * dv
         #stuff = tf.tensordot(g, dv, axes=1)
-        print("G>>>>", g.shape)
-        print("RESHAPE>>>", tf.reshape(dv, [tf.size(dv), 1]).shape)
         stuff = g * tf.reshape(dv, [tf.size(dv), 1])
-        print("STUF >>>", stuff.shape)
         diag_h = tf.linalg.diag_part(stuff)
-        print("diag_h", diag_h.shape)
         diag_root_h = tf.dtypes.cast(diag_h ** 0.5, dtype=tf.float64)
-        print("V SHAPE", v.shape)
         d = v ** 0.5
-        print("D SHAPE", d.shape)
         #g_h = d * np.squeeze(np.asarray(g.T))
         g_h = d * g
-        print("G_H SHAPE>>>>", g_h.shape)
 
         #A_h = right_multiplied_operator(A, d)
         #lsmr_op = regularized_lsq_operator(A_h, diag_root_h)
@@ -106,10 +92,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #r_aug = tf.Variable(tf.convert_to_tensor(r_aug), dtype=tf.float64)
         #r_aug = tf.Variable(r_aug, dtype=tf.float64)
         #r_aug.assign(r_aug[:m].assign(r*tf.ones(m, dtype=tf.float64)))
-        print("R SHAPE", r.shape)
-        print("ZERO SHAPE", tf.zeros(n).shape)
         r_aug = tf.concat([tf.reshape(r, [tf.shape(r)[0]]), tf.zeros(n, dtype=tf.float64)], axis=0)
-        print("r_aug", r_aug.shape)
 
         if auto_lsmr_tol:
             eta = 1e-2 * min(0.5, g_norm)
@@ -121,15 +104,10 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #temp = tf.reshape(tf.linalg.diag(d), [tf.shape(d)[0]])
         temp = tf.linalg.diag(d)
         #A_h = tf.Variable(A * temp, dtype=tf.float64)
-        print("A SHAPE >>>", A.shape)
-        print("TEMP SHAPE >>>", temp.shape)
         #A_h = tf.dtypes.cast(A * temp, dtype=tf.float64)
         A_h = tf.dtypes.cast(tf.matmul(A, temp), dtype=tf.float64)
 
         #lsmr_op = np.vstack(A_h, np.diag(diag_root_h))
-        print("A_H SHAPE >>>", A_h.shape)
-        print("DIAG_ROOT_H", diag_root_h.shape)
-        print("OTHER >>>", tf.linalg.diag(diag_root_h).shape)
         lsmr_op = tf.concat([A_h, tf.linalg.diag(diag_root_h)], axis=0)
 
         r_augl = tf.reshape(r_aug, (tf.size(r_aug), 1))
@@ -147,6 +125,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         theta = 1 - tf.math.minimum(tf.constant(0.005, dtype=tf.float64), g_norm)
 
         step = select_step(x, A, g_h, diag_h, p, p_h, d, lb, ub, theta, dis=d)
+        print("STEP AFTER", step.shape)
         cost_change = -evaluate_quadratic(A, g, step)
 
         # Perhaps almost never executed, the idea is that `p` is descent
@@ -157,11 +136,17 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                 A, g, x, p, theta, p_dot_g, lb, ub)
             print("x.shape cost", x.shape)
         else:
+            print("x", x.shape)
+            print("step", step.shape)
+            print("x + step", (x+step).shape)
             x = make_strictly_feasible(x + step, lb, ub, rstep=0)
             print("x.shape else", x.shape)
 
         step_norm = tf.norm(step)
         #r = A.dot(x) - b
+        print("IS X UN", x.shape)
+        print("IS A UN", A.shape)
+        print("IS B UN", b.shape)
         r = tf.tensordot(A, x, 1) - b
         #g = compute_grad(A, r.T).T
         g = compute_grad(A, tf.transpose(r))
@@ -170,13 +155,13 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
             termination_status = 2
 
         #cost = 0.5 * np.dot(r, r.T)
+        print("ITERATION R SHAPE>>>", r.shape)
         cost = 0.5 * tf.tensordot(r, r, 1)
 
     active_mask = find_active_constraints(x, lb, ub, rtol=tol)
 
     #return x_lsq
-    print("RESIZED SHAPE", tf.reshape(x, [tf.size(x), 1]).shape)
-    return tf.reshape(x, [tf.size(x), 1])
+    return x
 
 def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
     """Find an appropriate step size using backtracking line search."""
@@ -211,15 +196,21 @@ def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
 def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
     """Select the best step according to Trust Region Reflective algorithm."""
     if in_bounds(x + p, lb, ub):
+        print("P UNKNOWN", p.shape)
         return p
 
     p_stride, hits = step_size_to_bound(x, p, lb, ub)
     #r_h = np.copy(p_h)
     r_h = tf.identity(p_h)
+    print("P_H", p_h.shape)
     #r_h[hits.astype(bool)] *= -1
     #r_h[tf.dtypes.cast(hits, tf.bool)] *= -1
+    print("hits", hits.shape)
     r_h = tf.where(tf.equal(hits, False), r_h, r_h*-1)
     r = d * r_h
+    print("D", d.shape)
+    print("R_H", r_h.shape)
+    print("R", r.shape)
 
     # Restrict step, such that it hits the bound.
     p *= p_stride
@@ -256,8 +247,11 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
     ag *= ag_stride
 
     if p_value < r_value and p_value < ag_value:
+        print("P VALUE", p.shape)
         return p
     elif r_value < p_value and r_value < ag_value:
+        print("R VALUE", r.shape)
         return r
     else:
+        print("AG VALUE", ag.shape)
         return ag

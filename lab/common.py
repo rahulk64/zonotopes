@@ -120,6 +120,12 @@ def in_bounds(x, lb, ub):
 
 
 def step_size_to_bound(x, s, lb, ub):
+    lb = tf.reshape(lb, [tf.size(lb)])
+    ub = tf.reshape(ub, [tf.size(ub)])
+    print("X STEP", x.shape)
+    print("S STEP", s.shape)
+    print("LB STEP", lb.shape)
+    print("UB STEP", ub.shape)
     #non_zero = np.nonzero(s)
     zero = tf.constant(0, dtype=tf.float64)
     non_zero = tf.not_equal(s, zero)
@@ -134,7 +140,7 @@ def step_size_to_bound(x, s, lb, ub):
         #                             (ub - x)[non_zero] / s_non_zero)
         #steps[non_zero] = tf.math.maximum((lb - x)[non_zero] / s_non_zero,
         #                             (ub - x)[non_zero] / s_non_zero)
-        steps = tf.where(tf.equal(non_zero, False), steps, tf.math.maximum((lb - x)[non_zero] / s_non_zero, (ub - x)[non_zero] / s_non_zero))
+        steps = tf.where(tf.equal(non_zero, False), steps, tf.math.maximum((lb - x) / s_non_zero, (ub - x) / s_non_zero))
     #min_step = np.min(steps)
     min_step = tf.math.reduce_min(steps)
     #return min_step, np.equal(steps, min_step) * np.sign(s).astype(int)
@@ -231,7 +237,7 @@ def CL_scaling_vector(x, g, lb, ub):
     #mask = np.squeeze(np.asarray(mask))
 
     #v[mask] = ub[mask] - x[mask]
-    v = tf.where(tf.equal(mask, False), v, ub[mask]-x[mask])
+    v = tf.where(tf.equal(mask, False), v, ub-x)
     #dv[mask] = -1
     dv = tf.where(tf.equal(mask, False), dv, -1)
 
@@ -240,7 +246,7 @@ def CL_scaling_vector(x, g, lb, ub):
     #mask = np.squeeze(np.asarray(mask))
     #v[mask] = x[mask] - lb[mask]
     #dv[mask] = 1
-    v = tf.where(tf.equal(mask, False), v, x[mask]-lb[mask])
+    v = tf.where(tf.equal(mask, False), v, x-lb)
     dv = tf.where(tf.equal(mask, False), dv, 1)
 
 
