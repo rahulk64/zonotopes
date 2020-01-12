@@ -14,7 +14,7 @@ from common import (
 
 @tf.function
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
-               verbose):
+               verbose, r_aug):
     print("x_lsq", x_lsq.shape)
     lb = tf.reshape(lb, tf.shape(x_lsq))
     ub = tf.reshape(ub, tf.shape(x_lsq))
@@ -36,7 +36,8 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
     #    k = min(m, n)
     #elif lsq_solver == 'lsmr':
     #r_aug = tf.Variable(tf.zeros(m + n))
-    r_aug = np.zeros(m+n)
+    #r_aug = tf.Variable(np.zeros(m+n))
+    r_aug.assign(tf.zeros(m+n, dtype=tf.float64))
     print("r_aug", r_aug.shape)
     auto_lsmr_tol = False
     if lsmr_tol is None:
@@ -84,9 +85,9 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         #lsmr_op = regularized_lsq_operator(A_h, diag_root_h)
 
         #r_aug[:m] = r
-        r_aug = tf.Variable(tf.convert_to_tensor(r_aug), dtype=tf.float64)
+        #r_aug = tf.Variable(tf.convert_to_tensor(r_aug), dtype=tf.float64)
         #r_aug = tf.Variable(r_aug, dtype=tf.float64)
-        r_aug = r_aug[:m].assign(r*tf.ones(m, dtype=tf.float64))
+        r_aug.assign(r_aug[:m].assign(r*tf.ones(m, dtype=tf.float64)))
         if auto_lsmr_tol:
             eta = 1e-2 * min(0.5, g_norm)
             lsmr_tol = max(EPS, min(0.1, eta * g_norm))
