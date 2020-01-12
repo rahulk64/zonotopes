@@ -122,10 +122,6 @@ def in_bounds(x, lb, ub):
 def step_size_to_bound(x, s, lb, ub):
     lb = tf.reshape(lb, [tf.size(lb)])
     ub = tf.reshape(ub, [tf.size(ub)])
-    print("X STEP", x.shape)
-    print("S STEP", s.shape)
-    print("LB STEP", lb.shape)
-    print("UB STEP", ub.shape)
     #non_zero = np.nonzero(s)
     zero = tf.constant(0, dtype=tf.float64)
     non_zero = tf.not_equal(s, zero)
@@ -220,10 +216,6 @@ def make_strictly_feasible(x, lb, ub, rstep=1e-10):
 
 
 def CL_scaling_vector(x, g, lb, ub):
-    print("X", x.shape)
-    print("G", g.shape)
-    print("LB", lb.shape)
-    print("UB", ub.shape)
     lb = tf.reshape(lb, tf.shape(x))
     ub = tf.reshape(ub, tf.shape(x))
     #v = np.ones_like(x)
@@ -270,7 +262,6 @@ def reflective_transformation(y, lb, ub):
 
     #x = tf.dtypes.cast(tf.reshape(tf.identity(y), [tf.size(y)]), dtype=tf.float64)
     x = tf.dtypes.cast(tf.identity(y), dtype=tf.float64)
-    print("FIRST X SHAPE", x.shape)
 
     mask = lb_finite & ~ub_finite
     #x[mask] = tf.maximum(y[mask], 2 * lb[mask] - y[mask])
@@ -283,9 +274,6 @@ def reflective_transformation(y, lb, ub):
     #g_negative[mask] = y[mask] > ub[mask]
     #x = tf.where(tf.equal(mask, False), x, tf.minimum(y[mask], 2 * ub[mask] - y[mask]))
     x = tf.where(tf.equal(mask, False), x, tf.minimum(y, 2 * ub - y))
-    print("y", y.shape)
-    print("ub", ub.shape)
-    print("X SHAPE", x.shape)
 
     mask = lb_finite & ub_finite
     d = ub - lb
@@ -294,7 +282,6 @@ def reflective_transformation(y, lb, ub):
     #x[mask] = lb[mask] + np.minimum(t, 2 * d[mask] - t)
     #g_negative[mask] = t > d[mask]
     x = tf.where(tf.equal(mask, False), x, lb + tf.minimum(t, 2 * d - t))
-    print("ANOTHER X", x.shape)
 
     return x
 

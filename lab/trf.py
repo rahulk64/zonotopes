@@ -16,7 +16,6 @@ from common import (
 def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
                verbose):
     b = tf.reshape(b, [tf.size(b)])
-    print("X_LSQ", x_lsq.shape)
     lb = tf.reshape(lb, tf.shape(x_lsq))
     ub = tf.reshape(ub, tf.shape(x_lsq))
 
@@ -125,7 +124,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         theta = 1 - tf.math.minimum(tf.constant(0.005, dtype=tf.float64), g_norm)
 
         step = select_step(x, A, g_h, diag_h, p, p_h, d, lb, ub, theta, dis=d)
-        print("STEP AFTER", step.shape)
         cost_change = -evaluate_quadratic(A, g, step)
 
         # Perhaps almost never executed, the idea is that `p` is descent
@@ -134,19 +132,11 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         if cost_change < 0:
             x, step, cost_change = backtracking(
                 A, g, x, p, theta, p_dot_g, lb, ub)
-            print("x.shape cost", x.shape)
         else:
-            print("x", x.shape)
-            print("step", step.shape)
-            print("x + step", (x+step).shape)
             x = make_strictly_feasible(x + step, lb, ub, rstep=0)
-            print("x.shape else", x.shape)
 
         step_norm = tf.norm(step)
         #r = A.dot(x) - b
-        print("IS X UN", x.shape)
-        print("IS A UN", A.shape)
-        print("IS B UN", b.shape)
         r = tf.tensordot(A, x, 1) - b
         #g = compute_grad(A, r.T).T
         g = compute_grad(A, tf.transpose(r))
@@ -155,7 +145,6 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
             termination_status = 2
 
         #cost = 0.5 * np.dot(r, r.T)
-        print("ITERATION R SHAPE>>>", r.shape)
         cost = 0.5 * tf.tensordot(r, r, 1)
 
     active_mask = find_active_constraints(x, lb, ub, rtol=tol)
@@ -196,21 +185,15 @@ def backtracking(A, g, x, p, theta, p_dot_g, lb, ub):
 def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
     """Select the best step according to Trust Region Reflective algorithm."""
     if in_bounds(x + p, lb, ub):
-        print("P UNKNOWN", p.shape)
         return p
 
     p_stride, hits = step_size_to_bound(x, p, lb, ub)
     #r_h = np.copy(p_h)
     r_h = tf.identity(p_h)
-    print("P_H", p_h.shape)
     #r_h[hits.astype(bool)] *= -1
     #r_h[tf.dtypes.cast(hits, tf.bool)] *= -1
-    print("hits", hits.shape)
     r_h = tf.where(tf.equal(hits, False), r_h, r_h*-1)
     r = d * r_h
-    print("D", d.shape)
-    print("R_H", r_h.shape)
-    print("R", r.shape)
 
     # Restrict step, such that it hits the bound.
     p *= p_stride
@@ -247,11 +230,8 @@ def select_step(x, A_h, g_h, c_h, p, p_h, d, lb, ub, theta, dis):
     ag *= ag_stride
 
     if p_value < r_value and p_value < ag_value:
-        print("P VALUE", p.shape)
         return p
     elif r_value < p_value and r_value < ag_value:
-        print("R VALUE", r.shape)
         return r
     else:
-        print("AG VALUE", ag.shape)
         return ag
