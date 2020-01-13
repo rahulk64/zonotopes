@@ -21,6 +21,13 @@ A_eval = np.squeeze(np.asarray(A_eval))
 A = tf.convert_to_tensor(A)
 A_eval = tf.convert_to_tensor(A_eval)
 
+# unfortunately this code is needed if
+# zonotope can be degenerate (and doesn't
+# work in projZonotope() w/AutoGraph
+while A.shape[1] < 2:
+    A = tf.reshape(A, [tf.size(A)])
+    A = tf.stack((A, tf.zeros_like(A)), axis=1)
+
 # now run projection algorithm
 eps = projZonotope(A, A_eval)
 print("eps", eps)
