@@ -13,9 +13,10 @@ projected. Returns epsilon value in the form:
 Where A is matrix passed in, and parameter b = c - b'
 b' is the center of the zonotope, c is the point to be projected
 
-Utilizes lsq_linear algorithm in scipy.optimize, so there
-will be some error in calculation due to forcing matrix 
-into a sparse representation to work with scipy.
+Since the optimization problem is convex, a found minimum is
+guaranteed to be global. Note that the algorithm is not 
+guaranteed to project a point back onto itself if that point
+lies within the zonotope for this reason.
 
 Parameters
 ----------
