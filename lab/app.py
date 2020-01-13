@@ -5,11 +5,12 @@ from proj import projZonotope
 
 # Example usage of projZonotope
 # A is zonotope matrix, b is center of zonotope
-A = np.matrix("-4 0 2 3 ; -2 1 0 -1")
-b = np.matrix("20 10")
+#A = np.matrix("-4 0 2 3 ; -2 1 0 -1")
+A = np.matrix("1 0 0; 0 1 0; 0 0 1")
+b = np.matrix("20 10 0")
 
 # k is value to project into zonotope
-k = np.matrix("27. 16.")
+k = np.matrix("15. 10. 0.")
 
 # projection assumes zonotope centered at origin
 A_eval = k - b

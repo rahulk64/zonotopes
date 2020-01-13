@@ -38,7 +38,7 @@ def projZonotope(A, b):
     b = tf.cast(b, tf.float64)
     b = tf.reshape(b, (tf.size(b), 1))
 
-    x_lsq = tf.linalg.lstsq(A, b)
+    x_lsq = tf.linalg.lstsq(A, b, fast=False) # False since Cholesky decomposition occasionally fails
     eps = trf_linear(A, b, x_lsq, neg_ones, ones, 1e-13, 'lsmr', 1e-13, 200, 0)
 
     return eps

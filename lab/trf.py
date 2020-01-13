@@ -70,7 +70,7 @@ def trf_linear(A, b, x_lsq, lb, ub, tol, lsq_solver, lsmr_tol, max_iter,
         lsmr_op = tf.concat([A_h, tf.linalg.diag(diag_root_h)], axis=0)
 
         r_augl = tf.reshape(r_aug, (tf.size(r_aug), 1))
-        p_h = -1 * tf.linalg.lstsq(lsmr_op, r_augl)
+        p_h = -1 * tf.linalg.lstsq(lsmr_op, r_augl, fast=False)
         p_h = tf.reshape(p_h, [tf.size(p_h)])
 
         p = d * p_h
